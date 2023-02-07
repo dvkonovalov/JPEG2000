@@ -1,3 +1,6 @@
+from PIL import Image
+
+
 def convert_RGB_to_YCbCr(pixel):
     """
     Перевод пикселя из формата RGB в формат YCbCr
@@ -20,3 +23,42 @@ def convert_YCbCr_to_RGB(pixel):
     g = round(pixel[0] - 0.343 * (pixel[1] - 128) - 0.711 * (pixel[2] - 128))
     b = round(pixel[0] + 1.765 * (pixel[1] - 128))
     return (r, g, b)
+
+
+def get_matrix_pixel(path):
+    """
+    Получение матрицы пикселей и ее размера
+    :param path: путь до файла изображения
+    :return: матрица пикселей, ширина изображения, высота изображения
+    """
+    img = Image.open(path)
+    matrix = img.load()
+    (width, height) = img.size
+    return matrix, width, height
+
+
+def dc_level_shift(matrica, width, height, st):
+    for i in range(height):
+        for j in range(width):
+            pixel = matrica[i, j]
+            for color in range(3):
+                pixel[color] -= 2 ** (st[color] - 1)
+            matrica[i, j] = pixel
+    return matrica
+
+
+def dc_level_shift_revers(matrica, width, height, st):
+    for i in range(height):
+        for j in range(width):
+            pixel = matrica[i, j]
+            for color in range(3):
+                pixel[color] += 2 ** (st[color] - 1)
+            matrica[i, j] = pixel
+    return matrica
+
+
+# matrica, width, height = get_matrix_pixel('wood.jpg')
+# for i in range(height):
+#     for j in range(width):
+#         pixel = matrica[j, i]
+#         print(pixel)

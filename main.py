@@ -37,39 +37,67 @@ def get_matrix_pixel(path):
     return matrix, width, height
 
 
-def dc_level_shift(matrica, size, st):
+def dc_level_shift(matrix, size, st):
     """
     Выполнение сдвига яркости изображения (DC level shift)
-    :param matrica: матрица пикселей изображения
+    :param matrix: матрица пикселей изображения
     :param size: кортеж размеров - (высота, ширина)
     :param st: кортеж значений степеней ST для как каждой компоненты - (R, G, B)
     :return: Матрица изображения после сдвига яркости
     """
     for i in range(size[0]):
         for j in range(size[1]):
-            pixel = matrica[i, j]
+            pixel = matrix[i, j]
             for color in range(3):
                 pixel[color] -= 2 ** (st[color] - 1)
-            matrica[i, j] = pixel
-    return matrica
+            matrix[i, j] = pixel
+    return matrix
 
 
-def dc_level_shift_revers(matrica, size, st):
+def dc_level_shift_revers(matrix, size, st):
     """
     Выполняет возрат сдвига яркости в изображение
-    :param matrica: матрица пикселей изображения со сдвигом яркости
+    :param matrix: матрица пикселей изображения со сдвигом яркости
     :param size: кортеж размеров - (высота, ширина)
     :param st: кортеж значений степеней ST для как каждой компоненты - (R, G, B)
     :return: Матрица изображения без сдвига яркости
     """
     for i in range(size[0]):
         for j in range(size[1]):
-            pixel = matrica[i, j]
+            pixel = matrix[i, j]
             for color in range(3):
                 pixel[color] += 2 ** (st[color] - 1)
-            matrica[i, j] = pixel
-    return matrica
+            matrix[i, j] = pixel
+    return matrix
 
+
+def convert_image_to_YCbCr(matrix, size):
+    """
+    Переводит матрицу пикселей изображения из RGB в YCbCr
+    :param matrix: матрица пикселей изображения
+    :param size: кортеж с размерами изображения - (высота, ширина)
+    :return: матрицу изображения в формате YCbCr
+    """
+    for i in range(size[0]):
+        for j in range(size[1]):
+            pixel = matrix[i, j]
+            pixel = convert_RGB_to_YCbCr(pixel)
+            matrix[i, j] = pixel
+    return matrix
+
+def convert_image_to_RGB(matrix, size):
+    """
+    Переводит матрицу пикселей изображения из YCbCr в RGB
+    :param matrix: матрица пикселей изображения
+    :param size: кортеж с размерами изображения - (высота, ширина)
+    :return: матрицу изображения в формате RGB
+    """
+    for i in range(size[0]):
+        for j in range(size[1]):
+            pixel = matrix[i, j]
+            pixel = convert_YCbCr_to_RGB(pixel)
+            matrix[i, j] = pixel
+    return matrix
 
 # matrica, width, height = get_matrix_pixel('wood.jpg')
 # for i in range(height):

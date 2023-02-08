@@ -11,12 +11,15 @@ def choice_file_convert():
 
 
 window = tk.Tk()
-width = window.winfo_screenwidth()//4*3
-height = window.winfo_screenheight()//4*3
+width = 960
+height = 640
 window.title("JPEG2000")
 window.config(width=width, height=height)
-tk.Label(window, text='Конвертировать в JPEG2000', font='Times 24').place(x=width // 3, y=10)
-bt = tk.Button(window, text='выбрать файл', font='Times 14', command=choice_file_convert)
-bt.place(x=width//20, y=height//8, width=150, height=35)
+tk.Label(window, text='Конвертировать в JPEG2000', font='Times 20').place(x=300, y=10)
+bt1 = tk.Button(window, text='выбрать файл', font='Times 14', command=choice_file_convert)
+bt1.place(x=15, y=50, width=150, height=35)
+stroka_fail = tk.Label(window, text = 'Файл не выбран', font = 'Times 14')
+stroka_fail.place(x=200, y = 55)
+
 
 window.mainloop()

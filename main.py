@@ -37,14 +37,30 @@ def get_matrix_pixel(path):
     return matrix, width, height
 
 
-def dc_level_shift(matrix, size, st):
+def dc_level_shift(matrix, size):
     """
     Выполнение сдвига яркости изображения (DC level shift)
     :param matrix: матрица пикселей изображения
     :param size: кортеж размеров - (высота, ширина)
-    :param st: кортеж значений степеней ST для как каждой компоненты - (R, G, B)
-    :return: Матрица изображения после сдвига яркости
+    :return: Матрица изображения после сдвига яркости, массив со значениями степеней ST
     """
+    st = []
+    for components in range(3):
+        summa = 0
+        count = 0
+        for i in range(size[0]):
+            for j in range(size[1]):
+                summa += matrix[i, j][components]
+                count += 1
+        degree = 0
+        summa = summa/count
+        while (2**degree<summa):
+            degree += 1
+        if (2**degree-summa<summa-2**(degree-1)):
+            st.append(degree)
+        else:
+            st.append(degree-1)
+
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]

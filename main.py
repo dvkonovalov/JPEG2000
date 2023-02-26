@@ -101,6 +101,7 @@ def convert_image_to_YCbCr(matrix, size):
             matrix[i, j] = pixel
     return matrix
 
+
 def convert_image_to_RGB(matrix, size):
     """
     Переводит матрицу пикселей изображения из YCbCr в RGB
@@ -118,10 +119,10 @@ def convert_image_to_RGB(matrix, size):
 
 def get_destribution(matrix, size):
     """
-    Получение распределения
+    Получение распределения значений пикселей
     :param matrix: матрица изображения
     :param size: кортеж с размерами изображения - (высота, ширина)
-    :return:
+    :return: кортеж с словарями распределений
     """
     distribution_y = []
     distribution_cb = []
@@ -151,12 +152,77 @@ def get_destribution(matrix, size):
         distribution_cb[i][2] = distribution_cb[i-1][2]+distribution_cb[i][1]
         distribution_cr[i][2] = distribution_cr[i-1][2]+distribution_cr[i][1]
 
-    return (distribution_y, distribution_cb, distribution_cr)
+    #переделываем массивы в словари для удобства использования в дальнейшем
+    dist_y = {}
+    dist_cb = {}
+    dist_cr = {}
+    for element in distribution_y:
+        dist_y[element[0]] = element[2]
+    for element in distribution_cb:
+        dist_cb[element[0]] = element[2]
+    for element in distribution_cr:
+        dist_cr[element[0]] = element[2]
+    return (dist_y, dist_cb, dist_cr)
+
 
 def mq_coder(matrix, size):
-    l = 0
-    r = 65535
-    destribution = get_destribution(matrix, size)
+    """
+    Арифметическое кодирование (MQ-кодер)
+    :param matrix: матрица пикселей после квантования
+    :param size: кортеж с размерами изображения - (высота, ширина)
+    :return: массив со значениями данных после арифметического кодирования,
+    кортеж с распределениями из функции get_destribution
+    """
+    h = 65535
+    distribution_y, distribution_cb, distribution_cr  = get_destribution(matrix, size)
+    delitel = size[0]*size[1]
+    first_qtr = (h+1)//4
+    half = first_qtr*2
+    third_qtr = first_qtr*3
+
+    mas = []
+
+    for round in range(3):
+        string = ''
+        l = 0
+        h = 65535
+        bits_to_follow = 0
+        for i in range(size[0]):
+            for j in range(size[1]):
+                pixel = matrix[i, j]
+                component = pixel[round]
+                l = l + distribution_y[component-1]*(h-l+1)/delitel
+                h = l + distribution_y[component]*(h-l+1)//delitel-1
+                while (True):
+                    if (h<half):
+                        string += '0' + '1'*bits_to_follow
+                        bits_to_follow = 0
+                    elif (l>=half):
+                        string += '1' + '0'*bits_to_follow
+                        bits_to_follow = 0
+                        l -= half
+                        h -= half
+                    elif ((l>=first_qtr) and (h< third_qtr)):
+                        bits_to_follow += 1
+                        l -= first_qtr
+                        h -= first_qtr
+                    else: break
+                    l += l
+                    h += h+1
+        mas.append(string)
+    return mas, (distribution_y, distribution_cb, distribution_cr)
+
+
+def mq_coder_revers(mas, size):
+    """
+    Арифметическое декодирование (обратный MQ-кодер)
+    :param mas: Массив с закодированными последовательностями
+    :param size: размеры получаемой матрицы в виде кортежа
+    :return: матрица изображения после декодирования
+    """
+    matrix = Image.new('RGB', size, 'white')
+
+
 
 
 # matrica, width, height = get_matrix_pixel('wood.jpg')

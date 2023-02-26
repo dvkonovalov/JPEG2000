@@ -115,8 +115,52 @@ def convert_image_to_RGB(matrix, size):
             matrix[i, j] = pixel
     return matrix
 
+
+def get_destribution(matrix, size):
+    """
+    Получение распределения
+    :param matrix: матрица изображения
+    :param size: кортеж с размерами изображения - (высота, ширина)
+    :return:
+    """
+    distribution_y = []
+    distribution_cb = []
+    distribution_cr = []
+    for i in range(256):
+        distribution_y.append([i, 0, 0])
+        distribution_cb.append([i, 0, 0])
+        distribution_cr.append([i, 0, 0])
+
+    for i in range(size[0]):
+        for j in range(size[1]):
+            pixel = matrix[i, j]
+            distribution_y[pixel[0]][1] += 1
+            distribution_cb[pixel[0]][1] += 1
+            distribution_cr[pixel[0]][1] += 1
+    #Сортируем полученные массивы распределений
+    distribution_y.sort(key=lambda x: x[1], reverse=True)
+    distribution_cb.sort(key=lambda x: x[1], reverse=True)
+    distribution_cb.sort(key=lambda x: x[1], reverse=True)
+
+    distribution_y[0][2] = distribution_y[0][1]
+    distribution_cb[0][2] = distribution_cb[0][1]
+    distribution_cr[0][2] = distribution_cr[0][1]
+
+    for i in range(1, 256):
+        distribution_y[i][2] = distribution_y[i-1][2]+distribution_y[i][1]
+        distribution_cb[i][2] = distribution_cb[i-1][2]+distribution_cb[i][1]
+        distribution_cr[i][2] = distribution_cr[i-1][2]+distribution_cr[i][1]
+
+    return (distribution_y, distribution_cb, distribution_cr)
+
+def mq_coder(matrix, size):
+    l = 0
+    r = 65535
+    destribution = get_destribution(matrix, size)
+
+
 # matrica, width, height = get_matrix_pixel('wood.jpg')
 # for i in range(height):
 #     for j in range(width):
-#         pixel = matrica[j, i]
+#         pixel = matrica[i, j]
 #         print(pixel)

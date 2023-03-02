@@ -140,8 +140,8 @@ def get_destribution(matrix, size):
         for j in range(size[1]):
             pixel = matrix[i, j]
             distribution_y[pixel[0]][1] += 1
-            distribution_cb[pixel[0]][1] += 1
-            distribution_cr[pixel[0]][1] += 1
+            distribution_cb[pixel[1]][1] += 1
+            distribution_cr[pixel[2]][1] += 1
     # Сортируем полученные массивы распределений
     distribution_y.sort(key=lambda x: x[1], reverse=True)
     distribution_cb.sort(key=lambda x: x[1], reverse=True)
@@ -183,15 +183,14 @@ def mq_coder(matrix, size):
     :return: массив со значениями данных после арифметического кодирования,
     кортеж с распределениями из функции get_destribution
     """
-    h = 65535
     distribution = get_destribution(matrix, size)
     delitel = size[0] * size[1]
-    first_qtr = (h + 1) // 4
+    first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
     mas = []
 
-    for round in range(3):
+    for rounds in range(3):
         string = ''
         l = 0
         h = 65535
@@ -199,9 +198,10 @@ def mq_coder(matrix, size):
         for i in range(size[0]):
             for j in range(size[1]):
                 pixel = matrix[i, j]
-                component = pixel[round]
-                l = l + distribution[round][component][0] * (h - l + 1) // delitel
-                h = l + distribution[round][component][1] * (h - l + 1) // delitel - 1
+                component = pixel[rounds]
+                ln = l + distribution[rounds][component][0] * (h - l + 1) // delitel
+                h = l + distribution[rounds][component][1] * (h - l + 1) // delitel - 1
+                l = ln
                 while (True):
                     if (h < half):
                         string += '0' + '1' * bits_to_follow
@@ -234,29 +234,30 @@ def mq_coder_revers(mas, size, distrb):
     matrix = img.load()
     distribution = distrb
     delitel = size[0] * size[1]
-    first_qtr = (65535 + 1) // 4
+    first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
 
     for rounds in range(3):
         dist_comp = distribution[rounds]
         string = mas[rounds]
-        l = 0.0
-        h = 65535.0
+        l = 0
+        h = 65535
         value = int(string[:16], 2)
         next_pos = 16
         height = 0
         width = 0
         while (next_pos<len(string)):
-            freq = ((value - l + 1) * delitel - 1) // (h - l + 1 )
+            freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
             j = 0
             for j in dist_comp:
                 if (dist_comp[j][1]<=freq):
                     continue
                 else:
                     break
-            l = l + (dist_comp[j][0] * (h - l + 1)) // delitel
+            ln = l + (dist_comp[j][0] * (h - l + 1)) // delitel
             h = l + (dist_comp[j][1] * (h - l + 1)) // delitel - 1
+            l = ln
             while (True):
                 if (h < half):
                     pass
@@ -276,7 +277,7 @@ def mq_coder_revers(mas, size, distrb):
                 next_pos += 1
                 if (next_pos==len(string)):
                     break
-            component_pixel = [i for i in dist_comp if dist_comp[i][0] <= freq < dist_comp[i][1]][0]
+            component_pixel = j
             pixel = matrix[height, width]
             pix = list(pixel)
             pix[rounds] = component_pixel
@@ -288,13 +289,13 @@ def mq_coder_revers(mas, size, distrb):
                 width = 0
 
 
-    # matri1, size1 = get_matrix_pixel('example.jpg')
-    # for i in range(size1[0]):
-    #     for j in range(size1[1]):
-    #         if (matri1[i, j][1]!=matrix[i, j][1]):
-    #             print(matri1[i, j], matrix[i, j], i, j)
-    #             time.sleep(1)
-    # img.show()
+    matri1, size1 = get_matrix_pixel('example.jpg')
+    for i in range(size1[0]):
+        for j in range(size1[1]):
+            if (matri1[i, j][2]!=matrix[i, j][2]):
+                print(matri1[i, j], matrix[i, j], i, j)
+                time.sleep(1)
+    img.show()
 
 
     return matrix
@@ -304,6 +305,7 @@ def mq_coder_revers(mas, size, distrb):
 matrica, size = get_matrix_pixel('example.jpg')
 # for i in range(20):
 #     print(matrica[0,i])
+
 massiv, raspr = mq_coder(matrica, size)
 
 newmatrica = mq_coder_revers(massiv, size, raspr)

@@ -244,7 +244,7 @@ def mq_coder_revers(mas, size, distrb):
         l = 0
         h = 65535
         value = int(string[:16], 2)
-        next_pos = 16
+        next_pos = 15
         height = 0
         width = 0
         while (next_pos<len(string)):
@@ -273,10 +273,10 @@ def mq_coder_revers(mas, size, distrb):
                     break
                 l += l
                 h += h + 1
-                value = value * 2 + int(string[next_pos])
                 next_pos += 1
                 if (next_pos==len(string)):
                     break
+                value = value * 2 + int(string[next_pos])
             component_pixel = j
             pixel = matrix[height, width]
             pix = list(pixel)
@@ -287,26 +287,13 @@ def mq_coder_revers(mas, size, distrb):
             if (width==size[1]):
                 height += 1
                 width = 0
-
-
-    matri1, size1 = get_matrix_pixel('example.jpg')
-    for i in range(size1[0]):
-        for j in range(size1[1]):
-            if (matri1[i, j][2]!=matrix[i, j][2]):
-                print(matri1[i, j], matrix[i, j], i, j)
-                time.sleep(1)
-    img.show()
-
-
     return matrix
 
 
 
-matrica, size = get_matrix_pixel('example.jpg')
-# for i in range(20):
-#     print(matrica[0,i])
-
-massiv, raspr = mq_coder(matrica, size)
-
-newmatrica = mq_coder_revers(massiv, size, raspr)
+# matrica, size = get_matrix_pixel('example.jpg')
+#
+# massiv, raspr = mq_coder(matrica, size)
+#
+# newmatrica = mq_coder_revers(massiv, size, raspr)
 

@@ -1,7 +1,3 @@
-import math
-import time
-
-from fractions import Fraction
 from PIL import Image
 
 
@@ -192,33 +188,37 @@ def mq_coder(matrix, size):
 
     for rounds in range(3):
         string = ''
-        l = 0
+        le = 0
         h = 65535
         bits_to_follow = 0
         for i in range(size[0]):
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
-                ln = l + distribution[rounds][component][0] * (h - l + 1) // delitel
-                h = l + distribution[rounds][component][1] * (h - l + 1) // delitel - 1
-                l = ln
+                ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
+                h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
+                le = ln
+                #фиксим иногда вылет исключения
+                if (le > h):
+                    h = le
                 while (True):
                     if (h < half):
                         string += '0' + '1' * bits_to_follow
                         bits_to_follow = 0
-                    elif (l >= half):
+                    elif (le >= half):
                         string += '1' + '0' * bits_to_follow
                         bits_to_follow = 0
-                        l -= half
+                        le -= half
                         h -= half
-                    elif ((l >= first_qtr) and (h < third_qtr)):
+                    elif ((le >= first_qtr) and (h < third_qtr)):
                         bits_to_follow += 1
-                        l -= first_qtr
+                        le -= first_qtr
                         h -= first_qtr
                     else:
                         break
-                    l += l
+                    le += le
                     h += h + 1
+
         mas.append(string)
     return mas, distribution
 
@@ -247,11 +247,11 @@ def mq_coder_revers(mas, size, distrb):
         next_pos = 15
         height = 0
         width = 0
-        while (next_pos<len(string)):
+        while (next_pos < len(string)):
             freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
             j = 0
             for j in dist_comp:
-                if (dist_comp[j][1]<=freq):
+                if (dist_comp[j][1] <= freq):
                     continue
                 else:
                     break
@@ -274,7 +274,7 @@ def mq_coder_revers(mas, size, distrb):
                 l += l
                 h += h + 1
                 next_pos += 1
-                if (next_pos==len(string)):
+                if (next_pos == len(string)):
                     break
                 value = value * 2 + int(string[next_pos])
             component_pixel = j
@@ -284,16 +284,17 @@ def mq_coder_revers(mas, size, distrb):
             pix = tuple(pix)
             matrix[height, width] = pix
             width += 1
-            if (width==size[1]):
+            if (width == size[1]):
                 height += 1
                 width = 0
+                if (height == size[0]):
+                    break
+    img.show()
     return matrix
 
 
+matrica, size = get_matrix_pixel('example1.jpg')
 
-# matrica, size = get_matrix_pixel('example.jpg')
-#
-# massiv, raspr = mq_coder(matrica, size)
-#
-# newmatrica = mq_coder_revers(massiv, size, raspr)
+massiv, raspr = mq_coder(matrica, size)
 
+newmatrica = mq_coder_revers(massiv, size, raspr)

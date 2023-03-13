@@ -246,22 +246,22 @@ def quantize(matrix, n):
     return new_matrix
 
 
-def reverse_quantize(matrix, n):
+def reverse_quantize(matrix, size, n):
     """n: кэф квантования
         matrix: матрица полученная на 3 шаге"""
-    original_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 0] * (q_y[i % 8][j % 8] * n))
-            original_matrix[i, j, 0] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 1] * (q_c[i % 8][j % 8] * n))
-            original_matrix[i, j, 1] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 2] * (q_c[i % 8][j % 8] * n))
-            original_matrix[i, j, 2] = k
+    original_matrix = np.array([[(0, 0, 0)]*size[1]]*size[0])
+    for i in range(size[0]):
+        for j in range(size[1]):
+            k = round(matrix[i, j][0] * (q_y[i % 8][j % 8] * n))
+            original_matrix[i, j][0] = k
+    for i in range(size[0]):
+        for j in range(size[1]):
+            k = round(matrix[i, j][1] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j][1] = k
+    for i in range(size[0]):
+        for j in range(size[1]):
+            k = round(matrix[i, j][2] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j][2] = k
 
     return original_matrix
 
@@ -325,13 +325,13 @@ def dc_level_shift(matrix, size):
             st.append(degree)
         else:
             st.append(degree - 1)
-
+    print(st)
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]
             for color in range(3):
                 mas = list(pixel)
-                mas[color] = 2 ** (st[color] - 1)
+                mas[color] -= 2 ** (st[color] - 1)
                 pixel = tuple(mas)
             matrix[i, j] = pixel
     return matrix, st
@@ -349,7 +349,7 @@ def dc_level_shift_revers(matrix, size, st):
         for j in range(size[1]):
             pixel = matrix[i, j]
             for color in range(3):
-                pixel[color] += 2 ** (st[color] - 1)
+                pixel[color] += 2 ** (st[color]-1)
             matrix[i, j] = pixel
     return matrix
 
@@ -405,6 +405,7 @@ def get_destribution(matrix, size):
             distribution_y[pixel[0]][1] += 1
             distribution_cb[pixel[1]][1] += 1
             distribution_cr[pixel[2]][1] += 1
+
     # Сортируем полученные массивы распределений
     distribution_y.sort(key=lambda x: x[1], reverse=True)
     distribution_cb.sort(key=lambda x: x[1], reverse=True)
@@ -454,7 +455,7 @@ def mq_coder(matrix, size):
     mas = []
 
     for rounds in range(3):
-        string = ''
+        string1 = ''
         le = 0
         h = 65535
         bits_to_follow = 0
@@ -462,6 +463,8 @@ def mq_coder(matrix, size):
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
+                if component<0:
+                    component = 0
                 ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
                 le = ln
@@ -470,10 +473,10 @@ def mq_coder(matrix, size):
                     h = le
                 while (True):
                     if (h < half):
-                        string += '0' + '1' * bits_to_follow
+                        string1 += '0' + '1' * bits_to_follow
                         bits_to_follow = 0
                     elif (le >= half):
-                        string += '1' + '0' * bits_to_follow
+                        string1 += '1' + '0' * bits_to_follow
                         bits_to_follow = 0
                         le -= half
                         h -= half
@@ -485,8 +488,7 @@ def mq_coder(matrix, size):
                         break
                     le += le
                     h += h + 1
-
-        mas.append(string)
+        mas.append(string1)
     return mas, distribution
 
 
@@ -556,7 +558,6 @@ def mq_coder_revers(mas, size, distrb):
                 width = 0
                 if (height == size[0]):
                     break
-    img.show()
     return matrix
 
 
@@ -578,8 +579,7 @@ def create_file(data, path=None):
         6) Строка значений для Y
         7) Строка значений Cb
         8) Строка значений Cr
-        9) Количество вайвлетов
-        10) Коэффициент квантования
+        9) Коэффициент квантования
         """
         wr_record = str(data['size'][0]) + ' ' + str(data['size'][1]) + '\n'
         file.write(wr_record)
@@ -590,8 +590,34 @@ def create_file(data, path=None):
                 file.write(str(component[i][0]) + ' ' + str(component[i][1]) + ' ')
             file.write('\n')
         for i in data['mas_values']:
-            file.write(i[0])
+            file.write(i + '\n')
         file.write(str(data['quantize_koef']))
+
+def read_data():
+    ret_dict = {}
+    with open('file.jpeg2000', 'r') as file:
+        temp = list(map(int, (file.readline()).split()))
+        ret_dict['size'] = tuple(temp)
+        temp = list(map(int, (file.readline()).split()))
+        ret_dict['mas_st'] = temp
+        mas_destribution = []
+        for k in range(3):
+            mas_dest = list(map(int, (file.readline()).split()))
+            slovar = {}
+            for i in range(0, len(mas_dest), 2):
+                slovar[i//2] = (mas_dest[i], mas_dest[i+1])
+            mas_destribution.append(slovar)
+        ret_dict['mas_destribution'] = mas_destribution
+        mas_values = []
+        for k in range(3):
+            mas_values.append(file.readline()[:-1])
+        ret_dict['mas_values'] = mas_values
+        ret_dict['quantize_koef'] = int(file.readline())
+    return ret_dict
+
+
+
+
 
 
 
@@ -599,6 +625,7 @@ def create_file(data, path=None):
 
 def convert_to_JPEG(path, quantize_koef = 1):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
+
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
     matrix = wavelet(matrix, size)
@@ -612,5 +639,16 @@ def convert_to_JPEG(path, quantize_koef = 1):
     rec_dict['mas_destribution'] = mas_destribution
     create_file(rec_dict)
 
+def show_image():
+    data = read_data()
+    size = data['size']
+    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = reverse_quantize(matrix, size, data['quantize_koef'])
+    matrix = reverse_transform(matrix, size)
+    matrix = convert_image_to_RGB(matrix, size)
+    matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
+    matrix.show()
+
 
 convert_to_JPEG('example.jpg')
+show_image()

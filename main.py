@@ -242,7 +242,7 @@ def dc_level_shift(matrix, size):
             for color in range(3):
                 pixel[color] -= 2 ** (st[color] - 1)
             matrix[i, j] = pixel
-    return matrix
+    return matrix, st
 
 
 def dc_level_shift_revers(matrix, size, st):
@@ -468,8 +468,47 @@ def mq_coder_revers(mas, size, distrb):
     return matrix
 
 
-matrica, size = get_matrix_pixel('example1.jpg')
+def create_file(data, path):
+    """
+    Функция для записи данных изображения в файл
+    :param data: словарь с данными
+    :param path: путь куда сохранить файл
+    :return: True - успешно выполнено, False - ошибка
+    """
+    with open('file.jpeg2000') as file:
+        """
+        Порядок записи:
+        1) Размер изображения
+        2) Степени ST через пробел
+        3) Значение распредления Y
+        4) Значение распредления Cb
+        5) Значене распредления Cr
+        6) Строка значений для Y
+        7) Строка значений Cb
+        8) Строка значений Cr
+        """
+        wr_record = str(data['size'][0]) + ' ' + str(data['size'][1])
+        file.write(wr_record)
+        wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2])
+        file.write(wr_record)
+        file.write(data['mas_destribution'][0])
+        file.write(data['mas_destribution'][1])
+        file.write(data['mas_destribution'][2])
+        file.write(data['mas_values'][0])
+        file.write(data['mas_values'][1])
+        file.write(data['mas_values'][2])
 
-massiv, raspr = mq_coder(matrica, size)
 
-newmatrica = mq_coder_revers(massiv, size, raspr)
+
+
+
+def convert_to_JPEG(path):
+    matrix, size = get_matrix_pixel(path)   #size = (height, width)
+    matrix, mas_st = dc_level_shift(matrix, size)
+    matrix = convert_image_to_YCbCr(matrix, size)
+    matrix = wavelet(matrix, size)
+    #шаг с квантованием
+    mas_values, mas_destribution = mq_coder(matrix, size)
+
+
+create_file({1:12, 2:24, 'fdg':25}, 2)

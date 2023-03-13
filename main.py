@@ -176,6 +176,36 @@ def wavelet_reverse(image, size):
     return result
 
 
+def transform(image, size):
+    image = wavelet(image, size)
+    border_height = ceil(len(image)/2)
+    border_lenght = ceil(len(image[0])/2)
+    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            quadrant[i, j] = image[i, j]
+    quadrant = wavelet(quadrant, (border_height, border_lenght))
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            image[i, j] = quadrant[i, j]
+    return image
+
+
+def reverse_transform(image, size):
+    border_height = ceil(len(image)/2)
+    border_lenght = ceil(len(image[0])/2)
+    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            quadrant[i, j] = image[i, j]
+    quadrant = wavelet_reverse(quadrant, (border_height, border_lenght))
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            image[i, j] = quadrant[i, j]
+    image = wavelet_reverse(image, size)
+    return image
+
+
 def convert_RGB_to_YCbCr(pixel):
     """
     Перевод пикселя из формата RGB в формат YCbCr

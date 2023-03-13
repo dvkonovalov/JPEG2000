@@ -2,6 +2,66 @@ from PIL import Image
 import numpy as np
 from math import floor
 from math import ceil
+import numpy as np
+
+"""Стандартные матрицы квантования"""
+q_y = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+               [12, 12, 14, 19, 26, 58, 60, 55],
+               [14, 13, 16, 24, 40, 57, 69, 56],
+               [14, 17, 22, 29, 51, 87, 80, 62],
+               [18, 22, 37, 56, 68, 109, 103, 77],
+               [24, 35, 55, 64, 81, 104, 113, 92],
+               [49, 64, 78, 87, 103, 121, 120, 101],
+               [72, 92, 95, 98, 112, 100, 103, 99]])
+
+q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
+                [18, 21, 26, 66, 99, 99, 99, 99],
+                [24, 26, 56, 99, 99, 99, 99, 99],
+                [47, 66, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99]])
+
+
+def quantize(matrix, n):
+    """n: кэф квантования
+       matrix: матрица полученная на 3 шаге"""
+    new_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 0]/(q_y[i % 8][j % 8]*n))
+            new_matrix[i, j, 0] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i][j][1]/(q_c[i % 8][j % 8]*n))
+            new_matrix[i, j, 1] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 2]/(q_c[i % 8][j % 8]*n))
+            new_matrix[i, j, 2] = k
+
+    return new_matrix
+
+
+def reverse_quantize(matrix, n):
+    """n: кэф квантования
+        matrix: матрица полученная на 3 шаге"""
+    original_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 0] * (q_y[i % 8][j % 8] * n))
+            original_matrix[i, j, 0] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 1] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j, 1] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 2] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j, 2] = k
+
+    return original_matrix
 
 
 def wavelet(image, size):
@@ -468,7 +528,7 @@ def mq_coder_revers(mas, size, distrb):
     return matrix
 
 
-def create_file(data, path):
+def create_file(data, path=None):
     """
     Функция для записи данных изображения в файл
     :param data: словарь с данными
@@ -486,29 +546,39 @@ def create_file(data, path):
         6) Строка значений для Y
         7) Строка значений Cb
         8) Строка значений Cr
+        9) Количество вайвлетов
+        10) Коэффициент квантования
         """
         wr_record = str(data['size'][0]) + ' ' + str(data['size'][1])
         file.write(wr_record)
         wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2])
         file.write(wr_record)
-        file.write(data['mas_destribution'][0])
-        file.write(data['mas_destribution'][1])
-        file.write(data['mas_destribution'][2])
-        file.write(data['mas_values'][0])
-        file.write(data['mas_values'][1])
-        file.write(data['mas_values'][2])
+        for i in data['mas_destribution']:
+            file.write(i[0])
+        for i in data['mas_values']:
+            file.write(1[0])
+        file.write(data['count_wavelet'])
+        file.write(data['quantize_koef'])
 
 
 
 
 
-def convert_to_JPEG(path):
+def convert_to_JPEG(path, quantize_koef = 1, count_wavelet = 4):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
     matrix = wavelet(matrix, size)
-    #шаг с квантованием
+    matrix = quantize(matrix, quantize_koef)
     mas_values, mas_destribution = mq_coder(matrix, size)
+    rec_dict = {}
+    rec_dict['size'] = size
+    rec_dict['mas_st'] = mas_st
+    rec_dict['quantize_koef'] = quantize_koef
+    rec_dict['count_wavelet'] = count_wavelet
+    rec_dict['mas_values'] = mas_values
+    rec_dict['mas_destribution'] = mas_destribution
+    create_file(rec_dict)
 
 
 create_file({1:12, 2:24, 'fdg':25}, 2)

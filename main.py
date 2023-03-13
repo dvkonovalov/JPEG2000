@@ -23,47 +23,6 @@ q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99]])
 
-
-def quantize(matrix, n):
-    """n: кэф квантования
-       matrix: матрица полученная на 3 шаге"""
-    new_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 0]/(q_y[i % 8][j % 8]*n))
-            new_matrix[i, j, 0] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i][j][1]/(q_c[i % 8][j % 8]*n))
-            new_matrix[i, j, 1] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 2]/(q_c[i % 8][j % 8]*n))
-            new_matrix[i, j, 2] = k
-
-    return new_matrix
-
-
-def reverse_quantize(matrix, n):
-    """n: кэф квантования
-        matrix: матрица полученная на 3 шаге"""
-    original_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 0] * (q_y[i % 8][j % 8] * n))
-            original_matrix[i, j, 0] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 1] * (q_c[i % 8][j % 8] * n))
-            original_matrix[i, j, 1] = k
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 2] * (q_c[i % 8][j % 8] * n))
-            original_matrix[i, j, 2] = k
-
-    return original_matrix
-
-
 def wavelet(image, size):
     rows_count = size[0]
     columns_count = size[1]
@@ -236,6 +195,77 @@ def wavelet_reverse(image, size):
     return result
 
 
+def transform(image, size):
+    image = wavelet(image, size)
+    border_height = ceil(len(image)/2)
+    border_lenght = ceil(len(image[0])/2)
+    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            quadrant[i, j] = image[i, j]
+    quadrant = wavelet(quadrant, (border_height, border_lenght))
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            image[i, j] = quadrant[i, j]
+    return image
+
+
+def reverse_transform(image, size):
+    border_height = ceil(len(image)/2)
+    border_lenght = ceil(len(image[0])/2)
+    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            quadrant[i, j] = image[i, j]
+    quadrant = wavelet_reverse(quadrant, (border_height, border_lenght))
+    for i in range(len(quadrant)):
+        for j in range(len(quadrant[0])):
+            image[i, j] = quadrant[i, j]
+    image = wavelet_reverse(image, size)
+    return image
+
+
+
+def quantize(matrix, n):
+    """n: кэф квантования
+       matrix: матрица полученная на 3 шаге"""
+    new_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 0]/(q_y[i % 8][j % 8]*n))
+            new_matrix[i, j, 0] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i][j][1]/(q_c[i % 8][j % 8]*n))
+            new_matrix[i, j, 1] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 2]/(q_c[i % 8][j % 8]*n))
+            new_matrix[i, j, 2] = k
+
+    return new_matrix
+
+
+def reverse_quantize(matrix, n):
+    """n: кэф квантования
+        matrix: матрица полученная на 3 шаге"""
+    original_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 0] * (q_y[i % 8][j % 8] * n))
+            original_matrix[i, j, 0] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 1] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j, 1] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            k = round(matrix[i, j, 2] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j, 2] = k
+
+    return original_matrix
+
+
 def convert_RGB_to_YCbCr(pixel):
     """
     Перевод пикселя из формата RGB в формат YCbCr
@@ -300,7 +330,9 @@ def dc_level_shift(matrix, size):
         for j in range(size[1]):
             pixel = matrix[i, j]
             for color in range(3):
-                pixel[color] -= 2 ** (st[color] - 1)
+                mas = list(pixel)
+                mas[color] = 2 ** (st[color] - 1)
+                pixel = tuple(mas)
             matrix[i, j] = pixel
     return matrix, st
 
@@ -535,7 +567,7 @@ def create_file(data, path=None):
     :param path: путь куда сохранить файл
     :return: True - успешно выполнено, False - ошибка
     """
-    with open('file.jpeg2000') as file:
+    with open('file.jpeg2000', 'w') as file:
         """
         Порядок записи:
         1) Размер изображения
@@ -549,22 +581,23 @@ def create_file(data, path=None):
         9) Количество вайвлетов
         10) Коэффициент квантования
         """
-        wr_record = str(data['size'][0]) + ' ' + str(data['size'][1])
+        wr_record = str(data['size'][0]) + ' ' + str(data['size'][1]) + '\n'
         file.write(wr_record)
-        wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2])
+        wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2]) + '\n'
         file.write(wr_record)
-        for i in data['mas_destribution']:
-            file.write(i[0])
+        for component in data['mas_destribution']:
+            for i in range(256):
+                file.write(str(component[i][0]) + ' ' + str(component[i][1]) + ' ')
+            file.write('\n')
         for i in data['mas_values']:
-            file.write(1[0])
-        file.write(data['count_wavelet'])
-        file.write(data['quantize_koef'])
+            file.write(i[0])
+        file.write(str(data['quantize_koef']))
 
 
 
 
 
-def convert_to_JPEG(path, quantize_koef = 1, count_wavelet = 4):
+def convert_to_JPEG(path, quantize_koef = 1):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
@@ -575,10 +608,9 @@ def convert_to_JPEG(path, quantize_koef = 1, count_wavelet = 4):
     rec_dict['size'] = size
     rec_dict['mas_st'] = mas_st
     rec_dict['quantize_koef'] = quantize_koef
-    rec_dict['count_wavelet'] = count_wavelet
     rec_dict['mas_values'] = mas_values
     rec_dict['mas_destribution'] = mas_destribution
     create_file(rec_dict)
 
 
-create_file({1:12, 2:24, 'fdg':25}, 2)
+convert_to_JPEG('example.jpg')

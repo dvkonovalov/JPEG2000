@@ -1,5 +1,7 @@
+import time
+
+import numpy
 from PIL import Image
-import numpy as np
 from math import floor
 from math import ceil
 import numpy as np
@@ -290,6 +292,21 @@ def convert_YCbCr_to_RGB(pixel):
     return (r, g, b)
 
 
+def get_image_from_array(massiv, size):
+    """
+    Функция получения изображения из массива numpy
+    :param massiv: мсассив numpy
+    :param size: размер изображения
+    :return: матрица pillow
+    """
+    img = Image.new('RGB', size, 'white')
+    matrix = img.load()
+    for i in range(size[0]):
+        for j in range(size[1]):
+            matrix[i,j] = tuple(massiv[i, j])
+    img.show()
+    return matrix
+
 def get_matrix_pixel(path):
     """
     Получение матрицы пикселей и ее размера
@@ -310,6 +327,7 @@ def dc_level_shift(matrix, size):
     :return: Матрица изображения после сдвига яркости, массив со значениями степеней ST
     """
     st = []
+    matr = np.array([[(0, 0, 0)]*size[1]]*size[0])
     for components in range(3):
         summa = 0
         count = 0
@@ -318,23 +336,22 @@ def dc_level_shift(matrix, size):
                 summa += matrix[i, j][components]
                 count += 1
         degree = 0
-        summa = summa / count
-        while (2 ** degree < summa):
+        summa = summa // count
+        while (2 ** degree <= summa):
             degree += 1
-        if (2 ** degree - summa < summa - 2 ** (degree - 1)):
-            st.append(degree)
+        if (2 ** degree - summa <= summa - 2 ** (degree - 1)):
+            st.append(degree-1)
         else:
-            st.append(degree - 1)
-    print(st)
+            st.append(degree - 2)
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]
+            mas = list(pixel)
             for color in range(3):
-                mas = list(pixel)
-                mas[color] -= 2 ** (st[color] - 1)
-                pixel = tuple(mas)
-            matrix[i, j] = pixel
-    return matrix, st
+                mas[color] -= 2 ** st[color]
+            pixel = tuple(mas)
+            matr[i, j] = pixel
+    return matr, st
 
 
 def dc_level_shift_revers(matrix, size, st):
@@ -349,7 +366,9 @@ def dc_level_shift_revers(matrix, size, st):
         for j in range(size[1]):
             pixel = matrix[i, j]
             for color in range(3):
-                pixel[color] += 2 ** (st[color]-1)
+                mas = list(pixel)
+                mas[color] += 2 ** st[color]
+                pixel = tuple(mas)
             matrix[i, j] = pixel
     return matrix
 
@@ -394,17 +413,17 @@ def get_destribution(matrix, size):
     distribution_y = []
     distribution_cb = []
     distribution_cr = []
-    for i in range(256):
-        distribution_y.append([i, 0, 0])
-        distribution_cb.append([i, 0, 0])
-        distribution_cr.append([i, 0, 0])
+    for i in range(256*2+1):
+        distribution_y.append([i-256, 0, 0])
+        distribution_cb.append([i-256, 0, 0])
+        distribution_cr.append([i-256, 0, 0])
 
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]
-            distribution_y[pixel[0]][1] += 1
-            distribution_cb[pixel[1]][1] += 1
-            distribution_cr[pixel[2]][1] += 1
+            distribution_y[pixel[0]+256][1] += 1
+            distribution_cb[pixel[1]+256][1] += 1
+            distribution_cr[pixel[2]+256][1] += 1
 
     # Сортируем полученные массивы распределений
     distribution_y.sort(key=lambda x: x[1], reverse=True)
@@ -415,7 +434,7 @@ def get_destribution(matrix, size):
     distribution_cb[0][2] = distribution_cb[0][1]
     distribution_cr[0][2] = distribution_cr[0][1]
 
-    for i in range(1, 256):
+    for i in range(256*2+1):
         distribution_y[i][2] = distribution_y[i - 1][2] + distribution_y[i][1]
         distribution_cb[i][2] = distribution_cb[i - 1][2] + distribution_cb[i][1]
         distribution_cr[i][2] = distribution_cr[i - 1][2] + distribution_cr[i][1]
@@ -426,14 +445,20 @@ def get_destribution(matrix, size):
     dist_cr = {}
     pr = 0
     for element in distribution_y:
+        if (element[1]==0):
+            continue
         dist_y[element[0]] = (pr, element[2])
         pr = element[2]
     pr = 0
     for element in distribution_cb:
+        if (element[1]==0):
+            continue
         dist_cb[element[0]] = (pr, element[2])
         pr = element[2]
     pr = 0
     for element in distribution_cr:
+        if (element[1]==0):
+            continue
         dist_cr[element[0]] = (pr, element[2])
         pr = element[2]
     return (dist_y, dist_cb, dist_cr)
@@ -463,8 +488,6 @@ def mq_coder(matrix, size):
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
-                if component<0:
-                    component = 0
                 ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
                 le = ln
@@ -586,12 +609,13 @@ def create_file(data, path=None):
         wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2]) + '\n'
         file.write(wr_record)
         for component in data['mas_destribution']:
-            for i in range(256):
-                file.write(str(component[i][0]) + ' ' + str(component[i][1]) + ' ')
+            for i in component:
+                file.write(str(i) + ' ' + str(component[i][1]) + ' ')
             file.write('\n')
         for i in data['mas_values']:
             file.write(i + '\n')
         file.write(str(data['quantize_koef']))
+
 
 def read_data():
     ret_dict = {}
@@ -604,8 +628,10 @@ def read_data():
         for k in range(3):
             mas_dest = list(map(int, (file.readline()).split()))
             slovar = {}
+            pr = 0
             for i in range(0, len(mas_dest), 2):
-                slovar[i//2] = (mas_dest[i], mas_dest[i+1])
+                slovar[mas_dest[i]] = (pr, mas_dest[i+1])
+                pr = mas_dest[i+1]
             mas_destribution.append(slovar)
         ret_dict['mas_destribution'] = mas_destribution
         mas_values = []
@@ -625,7 +651,6 @@ def read_data():
 
 def convert_to_JPEG(path, quantize_koef = 1):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
-
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
     matrix = wavelet(matrix, size)
@@ -647,8 +672,20 @@ def show_image():
     matrix = reverse_transform(matrix, size)
     matrix = convert_image_to_RGB(matrix, size)
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
-    matrix.show()
+    get_image_from_array(matrix,  size)
 
+# convert_to_JPEG('example.jpg')
+# show_image()
 
-convert_to_JPEG('example.jpg')
-show_image()
+matrix, size = get_matrix_pixel('example.jpg')
+matrix = convert_image_to_YCbCr(matrix, size)
+matrix, mas_st = dc_level_shift(matrix, size)
+matrix = wavelet(matrix, size)
+# matrix = quantize(matrix, 1)
+matrix, dest = mq_coder(matrix, size)
+matrix = mq_coder_revers(matrix, size, dest)
+# matrix = reverse_quantize(matrix, size, 1)
+matrix = wavelet_reverse(matrix, size)
+matrix = dc_level_shift_revers(matrix, size, mas_st)
+matrix = convert_image_to_RGB(matrix, size)
+get_image_from_array(matrix, size)

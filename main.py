@@ -1,16 +1,35 @@
 from PIL import Image
-import numpy as np
 from math import floor
 from math import ceil
+import numpy as np
+
+"""Стандартные матрицы квантования"""
+q_y = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                [12, 12, 14, 19, 26, 58, 60, 55],
+                [14, 13, 16, 24, 40, 57, 69, 56],
+                [14, 17, 22, 29, 51, 87, 80, 62],
+                [18, 22, 37, 56, 68, 109, 103, 77],
+                [24, 35, 55, 64, 81, 104, 113, 92],
+                [49, 64, 78, 87, 103, 121, 120, 101],
+                [72, 92, 95, 98, 112, 100, 103, 99]])
+
+q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
+                [18, 21, 26, 66, 99, 99, 99, 99],
+                [24, 26, 56, 99, 99, 99, 99, 99],
+                [47, 66, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 33, 33, 99, 99],
+                [99, 99, 99, 99, 33, 33, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 99, 99, 99, 99]])
 
 
 def wavelet(image, size):
     rows_count = size[0]
     columns_count = size[1]
-    intermediate_result_1 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    intermediate_result_2 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    intermediate_result_3 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    result = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
+    intermediate_result_1 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    intermediate_result_2 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    intermediate_result_3 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    result = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
 
     for i in range(rows_count):
         for j in range(1, columns_count, 2):
@@ -26,19 +45,28 @@ def wavelet(image, size):
                 intermediate_result_1[i, j] = (y, cb, cr)
         for j in range(0, columns_count, 2):
             if j + 1 != columns_count and j != 0:
-                y = image[i, j][0] + floor((intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor((intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor((intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
+                y = image[i, j][0] + floor(
+                    (intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor(
+                    (intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor(
+                    (intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
                 intermediate_result_1[i, j] = (y, cb, cr)
             elif j + 1 == columns_count:
-                y = image[i, j][0] + floor((intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j - 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor((intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j - 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor((intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j - 1][2] + 2) / 4)
+                y = image[i, j][0] + floor(
+                    (intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j - 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor(
+                    (intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j - 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor(
+                    (intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j - 1][2] + 2) / 4)
                 intermediate_result_1[i, j] = (y, cb, cr)
             else:
-                y = image[i, j][0] + floor((intermediate_result_1[i, j + 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor((intermediate_result_1[i, j + 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor((intermediate_result_1[i, j + 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
+                y = image[i, j][0] + floor(
+                    (intermediate_result_1[i, j + 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor(
+                    (intermediate_result_1[i, j + 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor(
+                    (intermediate_result_1[i, j + 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
                 intermediate_result_1[i, j] = (y, cb, cr)
 
     for i in range(rows_count):
@@ -56,30 +84,45 @@ def wavelet(image, size):
     for j in range(columns_count):
         for i in range(1, rows_count, 2):
             if i + 1 != rows_count:
-                y = intermediate_result_2[i, j][0] - floor((intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
-                cb = intermediate_result_2[i, j][1] - floor((intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
-                cr = intermediate_result_2[i, j][2] - floor((intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
+                y = intermediate_result_2[i, j][0] - floor(
+                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
+                cb = intermediate_result_2[i, j][1] - floor(
+                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
+                cr = intermediate_result_2[i, j][2] - floor(
+                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
                 intermediate_result_3[i, j] = (y, cb, cr)
             else:
-                y = intermediate_result_2[i, j][0] - floor((intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
-                cb = intermediate_result_2[i, j][1] - floor((intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
-                cr = intermediate_result_2[i, j][2] - floor((intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
+                y = intermediate_result_2[i, j][0] - floor(
+                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
+                cb = intermediate_result_2[i, j][1] - floor(
+                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
+                cr = intermediate_result_2[i, j][2] - floor(
+                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
                 intermediate_result_3[i, j] = (y, cb, cr)
         for i in range(0, rows_count, 2):
             if i + 1 != rows_count and i != 0:
-                y = intermediate_result_2[i, j][0] + floor((intermediate_result_3[i - 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor((intermediate_result_3[i - 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor((intermediate_result_3[i - 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
+                y = intermediate_result_2[i, j][0] + floor(
+                    (intermediate_result_3[i - 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
+                cb = intermediate_result_2[i, j][1] + floor(
+                    (intermediate_result_3[i - 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
+                cr = intermediate_result_2[i, j][2] + floor(
+                    (intermediate_result_3[i - 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
                 intermediate_result_3[i, j] = (y, cb, cr)
             elif i + 1 == rows_count:
-                y = intermediate_result_2[i, j][0] + floor((intermediate_result_3[i - 1, j][0] + intermediate_result_3[i - 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor((intermediate_result_3[i - 1, j][1] + intermediate_result_3[i - 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor((intermediate_result_3[i - 1, j][2] + intermediate_result_3[i - 1, j][2] + 2) / 4)
+                y = intermediate_result_2[i, j][0] + floor(
+                    (intermediate_result_3[i - 1, j][0] + intermediate_result_3[i - 1, j][0] + 2) / 4)
+                cb = intermediate_result_2[i, j][1] + floor(
+                    (intermediate_result_3[i - 1, j][1] + intermediate_result_3[i - 1, j][1] + 2) / 4)
+                cr = intermediate_result_2[i, j][2] + floor(
+                    (intermediate_result_3[i - 1, j][2] + intermediate_result_3[i - 1, j][2] + 2) / 4)
                 intermediate_result_3[i, j] = (y, cb, cr)
             else:
-                y = intermediate_result_2[i, j][0] + floor((intermediate_result_3[i + 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor((intermediate_result_3[i + 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor((intermediate_result_3[i + 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
+                y = intermediate_result_2[i, j][0] + floor(
+                    (intermediate_result_3[i + 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
+                cb = intermediate_result_2[i, j][1] + floor(
+                    (intermediate_result_3[i + 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
+                cr = intermediate_result_2[i, j][2] + floor(
+                    (intermediate_result_3[i + 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
                 intermediate_result_3[i, j] = (y, cb, cr)
 
     for j in range(columns_count):
@@ -99,10 +142,10 @@ def wavelet(image, size):
 def wavelet_reverse(image, size):
     rows_count = size[0]
     columns_count = size[1]
-    intermediate_result_1 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    intermediate_result_2 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    intermediate_result_3 = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
-    result = np.array([[(0, 0, 0)]*columns_count for _ in range(rows_count)])
+    intermediate_result_1 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    intermediate_result_2 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    intermediate_result_3 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    result = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
     for j in range(columns_count):
         for i in range(ceil(rows_count / 2)):
             if i < rows_count / 2:
@@ -113,30 +156,45 @@ def wavelet_reverse(image, size):
     for j in range(columns_count):
         for i in range(0, rows_count, 2):
             if i + 1 != rows_count and i != 0:
-                y = intermediate_result_1[i, j][0] - floor((intermediate_result_1[i - 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor((intermediate_result_1[i - 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor((intermediate_result_1[i - 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
+                y = intermediate_result_1[i, j][0] - floor(
+                    (intermediate_result_1[i - 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
+                cb = intermediate_result_1[i, j][1] - floor(
+                    (intermediate_result_1[i - 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
+                cr = intermediate_result_1[i, j][2] - floor(
+                    (intermediate_result_1[i - 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
                 intermediate_result_2[i, j] = (y, cb, cr)
             elif i + 1 == rows_count:
-                y = intermediate_result_1[i, j][0] - floor((intermediate_result_1[i - 1, j][0] + intermediate_result_1[i - 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor((intermediate_result_1[i - 1, j][1] + intermediate_result_1[i - 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor((intermediate_result_1[i - 1, j][2] + intermediate_result_1[i - 1, j][2] + 2) / 4)
+                y = intermediate_result_1[i, j][0] - floor(
+                    (intermediate_result_1[i - 1, j][0] + intermediate_result_1[i - 1, j][0] + 2) / 4)
+                cb = intermediate_result_1[i, j][1] - floor(
+                    (intermediate_result_1[i - 1, j][1] + intermediate_result_1[i - 1, j][1] + 2) / 4)
+                cr = intermediate_result_1[i, j][2] - floor(
+                    (intermediate_result_1[i - 1, j][2] + intermediate_result_1[i - 1, j][2] + 2) / 4)
                 intermediate_result_2[i, j] = (y, cb, cr)
             else:
-                y = intermediate_result_1[i, j][0] - floor((intermediate_result_1[i + 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor((intermediate_result_1[i + 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor((intermediate_result_1[i + 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
+                y = intermediate_result_1[i, j][0] - floor(
+                    (intermediate_result_1[i + 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
+                cb = intermediate_result_1[i, j][1] - floor(
+                    (intermediate_result_1[i + 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
+                cr = intermediate_result_1[i, j][2] - floor(
+                    (intermediate_result_1[i + 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
                 intermediate_result_2[i, j] = (y, cb, cr)
         for i in range(1, rows_count, 2):
             if i + 1 != rows_count:
-                y = intermediate_result_1[i, j][0] + floor((intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
-                cb = intermediate_result_1[i, j][1] + floor((intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
-                cr = intermediate_result_1[i, j][2] + floor((intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
+                y = intermediate_result_1[i, j][0] + floor(
+                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
+                cb = intermediate_result_1[i, j][1] + floor(
+                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
+                cr = intermediate_result_1[i, j][2] + floor(
+                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
                 intermediate_result_2[i, j] = (y, cb, cr)
             else:
-                y = intermediate_result_1[i, j][0] + floor((intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
-                cb = intermediate_result_1[i, j][1] + floor((intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
-                cr = intermediate_result_1[i, j][2] + floor((intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
+                y = intermediate_result_1[i, j][0] + floor(
+                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
+                cb = intermediate_result_1[i, j][1] + floor(
+                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
+                cr = intermediate_result_1[i, j][2] + floor(
+                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
                 intermediate_result_2[i, j] = (y, cb, cr)
 
     for i in range(rows_count):
@@ -148,19 +206,28 @@ def wavelet_reverse(image, size):
     for i in range(rows_count):
         for j in range(0, columns_count, 2):
             if j + 1 != columns_count and j != 0:
-                y = intermediate_result_3[i, j][0] - floor((intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor((intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor((intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
+                y = intermediate_result_3[i, j][0] - floor(
+                    (intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
+                cb = intermediate_result_3[i, j][1] - floor(
+                    (intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
+                cr = intermediate_result_3[i, j][2] - floor(
+                    (intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
                 result[i, j] = (y, cb, cr)
             elif j + 1 == columns_count:
-                y = intermediate_result_3[i, j][0] - floor((intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j - 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor((intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j - 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor((intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j - 1][2] + 2) / 4)
+                y = intermediate_result_3[i, j][0] - floor(
+                    (intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j - 1][0] + 2) / 4)
+                cb = intermediate_result_3[i, j][1] - floor(
+                    (intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j - 1][1] + 2) / 4)
+                cr = intermediate_result_3[i, j][2] - floor(
+                    (intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j - 1][2] + 2) / 4)
                 result[i, j] = (y, cb, cr)
             else:
-                y = intermediate_result_3[i, j][0] - floor((intermediate_result_3[i, j + 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor((intermediate_result_3[i, j + 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor((intermediate_result_3[i, j + 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
+                y = intermediate_result_3[i, j][0] - floor(
+                    (intermediate_result_3[i, j + 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
+                cb = intermediate_result_3[i, j][1] - floor(
+                    (intermediate_result_3[i, j + 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
+                cr = intermediate_result_3[i, j][2] - floor(
+                    (intermediate_result_3[i, j + 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
                 result[i, j] = (y, cb, cr)
         for j in range(1, columns_count, 2):
             if j + 1 != columns_count:
@@ -178,8 +245,8 @@ def wavelet_reverse(image, size):
 
 def transform(image, size):
     image = wavelet(image, size)
-    border_height = ceil(len(image)/2)
-    border_lenght = ceil(len(image[0])/2)
+    border_height = ceil(len(image) / 2)
+    border_lenght = ceil(len(image[0]) / 2)
     quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
     for i in range(len(quadrant)):
         for j in range(len(quadrant[0])):
@@ -192,8 +259,8 @@ def transform(image, size):
 
 
 def reverse_transform(image, size):
-    border_height = ceil(len(image)/2)
-    border_lenght = ceil(len(image[0])/2)
+    border_height = ceil(len(image) / 2)
+    border_lenght = ceil(len(image[0]) / 2)
     quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
     for i in range(len(quadrant)):
         for j in range(len(quadrant[0])):
@@ -204,6 +271,65 @@ def reverse_transform(image, size):
             image[i, j] = quadrant[i, j]
     image = wavelet_reverse(image, size)
     return image
+
+
+def quantize(matrix, n):
+    """n: кэф квантования
+       matrix: матрица полученная на 3 шаге"""
+    new_matrix = np.array([[(0, 0, 0)] * len(matrix[0])] * len(matrix))
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            if (q_y[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j, 0] / 1)
+            else:
+                k = round(matrix[i, j, 0] / (q_y[i % 8][j % 8] * n))
+            new_matrix[i, j, 0] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i][j][1] / 1)
+            else:
+                k = round(matrix[i][j][1] / (q_c[i % 8][j % 8] * n))
+            new_matrix[i, j, 1] = k
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i][j][2] / 1)
+            else:
+                k = round(matrix[i][j][2] / (q_c[i % 8][j % 8] * n))
+            new_matrix[i, j, 2] = k
+
+    return new_matrix
+
+
+def reverse_quantize(matrix, size, n):
+    """n: кэф квантования
+        matrix: матрица полученная на 3 шаге"""
+    original_matrix = np.array([[(0, 0, 0)] * size[1]] * size[0])
+    for i in range(size[0]):
+        for j in range(size[1]):
+            if (q_y[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][0] * 1)
+            else:
+                k = round(matrix[i, j][0] * (q_y[i % 8][j % 8] * n))
+            original_matrix[i, j][0] = k
+    for i in range(size[0]):
+        for j in range(size[1]):
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][1] * 1)
+            else:
+                k = round(matrix[i, j][1] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j][1] = k
+    for i in range(size[0]):
+        for j in range(size[1]):
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][2] * 1)
+            else:
+                k = round(matrix[i, j][2] * (q_c[i % 8][j % 8] * n))
+            original_matrix[i, j][2] = k
+
+    return original_matrix
+
 
 
 def convert_RGB_to_YCbCr(pixel):
@@ -230,6 +356,41 @@ def convert_YCbCr_to_RGB(pixel):
     return (r, g, b)
 
 
+def get_image_from_array(massiv, size):
+    """
+    Функция получения изображения из массива numpy
+    :param massiv: мсассив numpy
+    :param size: размер изображения
+    :return: матрица pillow
+    """
+    img = Image.new('RGB', size, 'white')
+    matrix = img.load()
+    for i in range(size[0]):
+        for j in range(size[1]):
+            matrix[i, j] = tuple(massiv[i, j])
+    img.show()
+    return True
+
+
+def save_image(massiv, size, path):
+    """
+    Конвертируем изображение из jpeg2000 в jpg
+    :param massiv: массив со значениями пикселей
+    :param size: размер изображения
+    :return: True - Успешно сохранена, False - ошибка
+    """
+    try:
+        img = Image.new('RGB', size, 'white')
+        matrix = img.load()
+        for i in range(size[0]):
+            for j in range(size[1]):
+                matrix[i, j] = tuple(massiv[i, j])
+        img.save(path, 'JPEG')
+        return True
+    except:
+        return False
+
+
 def get_matrix_pixel(path):
     """
     Получение матрицы пикселей и ее размера
@@ -250,6 +411,7 @@ def dc_level_shift(matrix, size):
     :return: Матрица изображения после сдвига яркости, массив со значениями степеней ST
     """
     st = []
+    matr = np.array([[(0, 0, 0)] * size[1]] * size[0])
     for components in range(3):
         summa = 0
         count = 0
@@ -258,21 +420,22 @@ def dc_level_shift(matrix, size):
                 summa += matrix[i, j][components]
                 count += 1
         degree = 0
-        summa = summa / count
-        while (2 ** degree < summa):
+        summa = summa // count
+        while (2 ** degree <= summa):
             degree += 1
-        if (2 ** degree - summa < summa - 2 ** (degree - 1)):
-            st.append(degree)
-        else:
+        if (2 ** degree - summa <= summa - 2 ** (degree - 1)):
             st.append(degree - 1)
-
+        else:
+            st.append(degree - 2)
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]
+            mas = list(pixel)
             for color in range(3):
-                pixel[color] -= 2 ** (st[color] - 1)
-            matrix[i, j] = pixel
-    return matrix
+                mas[color] -= 2 ** st[color]
+            pixel = tuple(mas)
+            matr[i, j] = pixel
+    return matr, st
 
 
 def dc_level_shift_revers(matrix, size, st):
@@ -287,7 +450,9 @@ def dc_level_shift_revers(matrix, size, st):
         for j in range(size[1]):
             pixel = matrix[i, j]
             for color in range(3):
-                pixel[color] += 2 ** (st[color] - 1)
+                mas = list(pixel)
+                mas[color] += 2 ** st[color]
+                pixel = tuple(mas)
             matrix[i, j] = pixel
     return matrix
 
@@ -332,17 +497,18 @@ def get_destribution(matrix, size):
     distribution_y = []
     distribution_cb = []
     distribution_cr = []
-    for i in range(256):
-        distribution_y.append([i, 0, 0])
-        distribution_cb.append([i, 0, 0])
-        distribution_cr.append([i, 0, 0])
+    for i in range(256 * 2 + 1):
+        distribution_y.append([i - 256, 0, 0])
+        distribution_cb.append([i - 256, 0, 0])
+        distribution_cr.append([i - 256, 0, 0])
 
     for i in range(size[0]):
         for j in range(size[1]):
             pixel = matrix[i, j]
-            distribution_y[pixel[0]][1] += 1
-            distribution_cb[pixel[1]][1] += 1
-            distribution_cr[pixel[2]][1] += 1
+            distribution_y[pixel[0] + 256][1] += 1
+            distribution_cb[pixel[1] + 256][1] += 1
+            distribution_cr[pixel[2] + 256][1] += 1
+
     # Сортируем полученные массивы распределений
     distribution_y.sort(key=lambda x: x[1], reverse=True)
     distribution_cb.sort(key=lambda x: x[1], reverse=True)
@@ -352,7 +518,7 @@ def get_destribution(matrix, size):
     distribution_cb[0][2] = distribution_cb[0][1]
     distribution_cr[0][2] = distribution_cr[0][1]
 
-    for i in range(1, 256):
+    for i in range(256 * 2 + 1):
         distribution_y[i][2] = distribution_y[i - 1][2] + distribution_y[i][1]
         distribution_cb[i][2] = distribution_cb[i - 1][2] + distribution_cb[i][1]
         distribution_cr[i][2] = distribution_cr[i - 1][2] + distribution_cr[i][1]
@@ -363,14 +529,20 @@ def get_destribution(matrix, size):
     dist_cr = {}
     pr = 0
     for element in distribution_y:
+        if (element[1] == 0):
+            continue
         dist_y[element[0]] = (pr, element[2])
         pr = element[2]
     pr = 0
     for element in distribution_cb:
+        if (element[1] == 0):
+            continue
         dist_cb[element[0]] = (pr, element[2])
         pr = element[2]
     pr = 0
     for element in distribution_cr:
+        if (element[1] == 0):
+            continue
         dist_cr[element[0]] = (pr, element[2])
         pr = element[2]
     return (dist_y, dist_cb, dist_cr)
@@ -392,7 +564,7 @@ def mq_coder(matrix, size):
     mas = []
 
     for rounds in range(3):
-        string = ''
+        string1 = ''
         le = 0
         h = 65535
         bits_to_follow = 0
@@ -403,15 +575,15 @@ def mq_coder(matrix, size):
                 ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
                 le = ln
-                #фиксим иногда вылет исключения
+                # фиксим иногда вылет исключения
                 if (le > h):
                     h = le
                 while (True):
                     if (h < half):
-                        string += '0' + '1' * bits_to_follow
+                        string1 += '0' + '1' * bits_to_follow
                         bits_to_follow = 0
                     elif (le >= half):
-                        string += '1' + '0' * bits_to_follow
+                        string1 += '1' + '0' * bits_to_follow
                         bits_to_follow = 0
                         le -= half
                         h -= half
@@ -423,8 +595,7 @@ def mq_coder(matrix, size):
                         break
                     le += le
                     h += h + 1
-
-        mas.append(string)
+        mas.append(string1)
     return mas, distribution
 
 
@@ -494,12 +665,148 @@ def mq_coder_revers(mas, size, distrb):
                 width = 0
                 if (height == size[0]):
                     break
-    img.show()
     return matrix
 
 
-matrica, size = get_matrix_pixel('example1.jpg')
+def create_file(data, path):
+    """
+    Функция для записи данных изображения в файл
+    :param data: словарь с данными
+    :param path: путь куда сохранить файл
+    :return: True - успешно выполнено, False - ошибка
+    """
+    with open(path, 'w') as file:
+        """
+        Порядок записи:
+        1) Размер изображения
+        2) Степени ST через пробел
+        3) Значение распредления Y
+        4) Значение распредления Cb
+        5) Значене распредления Cr
+        6) Строка значений для Y
+        7) Строка значений Cb
+        8) Строка значений Cr
+        9) Коэффициент квантования
+        10) Включено ли повторное вейвлет-преобразование
+        """
+        wr_record = str(data['size'][0]) + ' ' + str(data['size'][1]) + '\n'
+        file.write(wr_record)
+        wr_record = str(data['mas_st'][0]) + ' ' + str(data['mas_st'][1]) + ' ' + str(data['mas_st'][2]) + '\n'
+        file.write(wr_record)
+        for component in data['mas_destribution']:
+            for i in component:
+                file.write(str(i) + ' ' + str(component[i][1]) + ' ')
+            file.write('\n')
+        for i in data['mas_values']:
+            file.write(i + '\n')
+        file.write(str(data['quantize_koef']) + '\n')
+        file.write(str(int(data['on_transform'])))
 
-massiv, raspr = mq_coder(matrica, size)
 
-newmatrica = mq_coder_revers(massiv, size, raspr)
+def read_data(path):
+    ret_dict = {}
+    """
+            Порядок чтения:
+            1) Размер изображения
+            2) Степени ST через пробел
+            3) Значение распредления Y
+            4) Значение распредления Cb
+            5) Значене распредления Cr
+            6) Строка значений для Y
+            7) Строка значений Cb
+            8) Строка значений Cr
+            9) Коэффициент квантования
+            10) Включено ли повторное вейвлет-преобразование
+            """
+    with open(path, 'r') as file:
+        temp = list(map(int, (file.readline()).split()))
+        ret_dict['size'] = tuple(temp)
+        temp = list(map(int, (file.readline()).split()))
+        ret_dict['mas_st'] = temp
+        mas_destribution = []
+        for k in range(3):
+            mas_dest = list(map(int, (file.readline()).split()))
+            slovar = {}
+            pr = 0
+            for i in range(0, len(mas_dest), 2):
+                slovar[mas_dest[i]] = (pr, mas_dest[i + 1])
+                pr = mas_dest[i + 1]
+            mas_destribution.append(slovar)
+        ret_dict['mas_destribution'] = mas_destribution
+        mas_values = []
+        for k in range(3):
+            mas_values.append(file.readline()[:-1])
+        ret_dict['mas_values'] = mas_values
+        ret_dict['quantize_koef'] = float(file.readline())
+        flag = file.readline()
+        if int(flag) == 1:
+            flag = True
+        else:
+            flag = False
+        ret_dict['on_transform'] = flag
+        print(flag)
+    return ret_dict
+
+
+def convert_to_JPEG(path, path_save, quantize_koef=0.1, on_transform=False):
+    matrix, size = get_matrix_pixel(path)  # size = (height, width)
+    matrix, mas_st = dc_level_shift(matrix, size)
+    matrix = convert_image_to_YCbCr(matrix, size)
+    if on_transform:
+        matrix = transform(matrix, size)
+    else:
+        matrix = wavelet(matrix, size)
+    matrix = quantize(matrix, quantize_koef)
+    mas_values, mas_destribution = mq_coder(matrix, size)
+    rec_dict = {}
+    rec_dict['size'] = size
+    rec_dict['mas_st'] = mas_st
+    rec_dict['quantize_koef'] = quantize_koef
+    rec_dict['mas_values'] = mas_values
+    rec_dict['mas_destribution'] = mas_destribution
+    rec_dict['on_transform'] = on_transform
+    create_file(rec_dict, path_save)
+
+
+def show_image(path):
+    data = read_data(path)
+    size = data['size']
+    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = reverse_quantize(matrix, size, data['quantize_koef'])
+    if data['on_transform']:
+        matrix = reverse_transform(matrix, size)
+    else:
+        matrix = wavelet_reverse(matrix, size)
+    matrix = convert_image_to_RGB(matrix, size)
+    matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
+    get_image_from_array(matrix, size)
+
+
+def convert_image(path, path_save):
+    data = read_data(path)
+    size = data['size']
+    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = reverse_quantize(matrix, size, data['quantize_koef'])
+    if data['on_transform']:
+        matrix = reverse_transform(matrix, size)
+    else:
+        matrix = wavelet_reverse(matrix, size)
+    matrix = convert_image_to_RGB(matrix, size)
+    matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
+    save_image(matrix, size, path_save)
+
+# convert_to_JPEG('example1.jpg', "D:\Downalds\ test.jpeg2000")
+# show_image("D:\Downalds\ test.jpeg2000")
+# koef = 0.1
+# matrix, size = get_matrix_pixel('example1.jpg')
+# matrix, mas_st = dc_level_shift(matrix, size)
+# matrix = convert_image_to_YCbCr(matrix, size)
+# matrix = transform(matrix, size)
+# matrix = quantize(matrix, koef)
+# matrix, dest = mq_coder(matrix, size)
+# matrix = mq_coder_revers(matrix, size, dest)
+# matrix = reverse_quantize(matrix, size, koef)
+# matrix = reverse_transform(matrix, size)
+# matrix = convert_image_to_RGB(matrix, size)
+# matrix = dc_level_shift_revers(matrix, size, mas_st)
+# get_image_from_array(matrix, size)

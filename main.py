@@ -233,15 +233,24 @@ def quantize(matrix, n):
     new_matrix = np.array([[(0, 0, 0)]*len(matrix[0])]*len(matrix))
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 0]/(q_y[i % 8][j % 8]*n))
+            if (q_y[i % 8][j % 8]*n) < 1:
+                k = round(matrix[i, j, 0] / 1)
+            else:
+                k = round(matrix[i, j, 0]/(q_y[i % 8][j % 8]*n))
             new_matrix[i, j, 0] = k
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
-            k = round(matrix[i][j][1]/(q_c[i % 8][j % 8]*n))
+            if (q_c[i % 8][j % 8]*n) < 1:
+                k = round(matrix[i][j][1] / 1)
+            else:
+                k = round(matrix[i][j][1] / (q_c[i % 8][j % 8] * n))
             new_matrix[i, j, 1] = k
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
-            k = round(matrix[i, j, 2]/(q_c[i % 8][j % 8]*n))
+            if (q_c[i % 8][j % 8]*n) < 1:
+                k = round(matrix[i][j][2] / 1)
+            else:
+                k = round(matrix[i][j][2] / (q_c[i % 8][j % 8] * n))
             new_matrix[i, j, 2] = k
 
     return new_matrix
@@ -253,15 +262,24 @@ def reverse_quantize(matrix, size, n):
     original_matrix = np.array([[(0, 0, 0)]*size[1]]*size[0])
     for i in range(size[0]):
         for j in range(size[1]):
-            k = round(matrix[i, j][0] * (q_y[i % 8][j % 8] * n))
+            if (q_y[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][0] * 1)
+            else:
+                k = round(matrix[i, j][0] * (q_y[i % 8][j % 8] * n))
             original_matrix[i, j][0] = k
     for i in range(size[0]):
         for j in range(size[1]):
-            k = round(matrix[i, j][1] * (q_c[i % 8][j % 8] * n))
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][1] * 1)
+            else:
+                k = round(matrix[i, j][1] * (q_c[i % 8][j % 8] * n))
             original_matrix[i, j][1] = k
     for i in range(size[0]):
         for j in range(size[1]):
-            k = round(matrix[i, j][2] * (q_c[i % 8][j % 8] * n))
+            if (q_c[i % 8][j % 8] * n) < 1:
+                k = round(matrix[i, j][2] * 1)
+            else:
+                k = round(matrix[i, j][2] * (q_c[i % 8][j % 8] * n))
             original_matrix[i, j][2] = k
 
     return original_matrix

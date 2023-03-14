@@ -322,7 +322,25 @@ def get_image_from_array(massiv, size):
         for j in range(size[1]):
             matrix[i,j] = tuple(massiv[i, j])
     img.show()
-    return matrix
+    return True
+
+def save_image(massiv, size, path):
+    """
+    Конвертируем изображение из jpeg2000 в jpg
+    :param massiv: массив со значениями пикселей
+    :param size: размер изображения
+    :return: True - Успешно сохранена, False - ошибка
+    """
+    try:
+        img = Image.new('RGB', size, 'white')
+        matrix = img.load()
+        for i in range(size[0]):
+            for j in range(size[1]):
+                matrix[i, j] = tuple(massiv[i, j])
+        img.save(path, 'JPEG')
+        return True
+    except:
+        return False
 
 def get_matrix_pixel(path):
     """
@@ -506,12 +524,11 @@ def mq_coder(matrix, size):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
                 ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
-                h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
+                h = le + (distribution[rounds][component][1] * (h - le+1)) // delitel-1
                 le = ln
                 #фиксим иногда вылет исключения
                 if (le > h):
                     h = le
-                    print(1111)
                 while (True):
                     if (h < half):
                         string1 += '0' + '1' * bits_to_follow
@@ -566,7 +583,7 @@ def mq_coder_revers(mas, size, distrb):
                 else:
                     break
             ln = l + (dist_comp[j][0] * (h - l + 1)) // delitel
-            h = l + (dist_comp[j][1] * (h - l + 1)) // delitel - 1
+            h = l + (dist_comp[j][1] * (h - l+1)) // delitel-1
             l = ln
             while (True):
                 if (h < half):
@@ -602,14 +619,14 @@ def mq_coder_revers(mas, size, distrb):
     return matrix
 
 
-def create_file(data, path=None):
+def create_file(data, path):
     """
     Функция для записи данных изображения в файл
     :param data: словарь с данными
     :param path: путь куда сохранить файл
     :return: True - успешно выполнено, False - ошибка
     """
-    with open('file.jpeg2000', 'w') as file:
+    with open(path, 'w') as file:
         """
         Порядок записи:
         1) Размер изображения
@@ -635,9 +652,9 @@ def create_file(data, path=None):
         file.write(str(data['quantize_koef']))
 
 
-def read_data():
+def read_data(path):
     ret_dict = {}
-    with open('file.jpeg2000', 'r') as file:
+    with open(path, 'r') as file:
         temp = list(map(int, (file.readline()).split()))
         ret_dict['size'] = tuple(temp)
         temp = list(map(int, (file.readline()).split()))
@@ -656,18 +673,13 @@ def read_data():
         for k in range(3):
             mas_values.append(file.readline()[:-1])
         ret_dict['mas_values'] = mas_values
-        ret_dict['quantize_koef'] = int(file.readline())
+        ret_dict['quantize_koef'] = float(file.readline())
     return ret_dict
 
 
 
 
-
-
-
-
-
-def convert_to_JPEG(path, quantize_koef = 1):
+def convert_to_JPEG(path, path_save, quantize_koef = 0.1):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
@@ -680,30 +692,41 @@ def convert_to_JPEG(path, quantize_koef = 1):
     rec_dict['quantize_koef'] = quantize_koef
     rec_dict['mas_values'] = mas_values
     rec_dict['mas_destribution'] = mas_destribution
-    create_file(rec_dict)
+    create_file(rec_dict, path_save)
 
-def show_image():
-    data = read_data()
+
+def show_image(path):
+    data = read_data(path)
     size = data['size']
     matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
     matrix = reverse_quantize(matrix, size, data['quantize_koef'])
-    matrix = reverse_transform(matrix, size)
+    matrix = wavelet_reverse(matrix, size)
     matrix = convert_image_to_RGB(matrix, size)
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
     get_image_from_array(matrix,  size)
 
-# convert_to_JPEG('example.jpg')
-# show_image()
-koef = 0.06
-matrix, size = get_matrix_pixel('example.jpg')
-matrix, mas_st = dc_level_shift(matrix, size)
-matrix = convert_image_to_YCbCr(matrix, size)
-matrix = wavelet(matrix, size)
-matrix = quantize(matrix, koef)
-matrix, dest = mq_coder(matrix, size)
-matrix = mq_coder_revers(matrix, size, dest)
-matrix = reverse_quantize(matrix, size, koef)
-matrix = wavelet_reverse(matrix, size)
-matrix = convert_image_to_RGB(matrix, size)
-matrix = dc_level_shift_revers(matrix, size, mas_st)
-get_image_from_array(matrix, size)
+def convert_image(path, path_save):
+    data = read_data(path)
+    size = data['size']
+    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = reverse_quantize(matrix, size, data['quantize_koef'])
+    matrix = wavelet_reverse(matrix, size)
+    matrix = convert_image_to_RGB(matrix, size)
+    matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
+    save_image(matrix,  size, path_save)
+
+convert_to_JPEG('example2.jpg', "D:\Downalds\ test.jpeg2000")
+show_image("D:\Downalds\ test.jpeg2000")
+# koef = 0.1
+# matrix, size = get_matrix_pixel('example1.jpg')
+# matrix, mas_st = dc_level_shift(matrix, size)
+# matrix = convert_image_to_YCbCr(matrix, size)
+# matrix = transform(matrix, size)
+# matrix = quantize(matrix, koef)
+# matrix, dest = mq_coder(matrix, size)
+# matrix = mq_coder_revers(matrix, size, dest)
+# matrix = reverse_quantize(matrix, size, koef)
+# matrix = reverse_transform(matrix, size)
+# matrix = convert_image_to_RGB(matrix, size)
+# matrix = dc_level_shift_revers(matrix, size, mas_st)
+# get_image_from_array(matrix, size)

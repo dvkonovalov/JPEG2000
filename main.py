@@ -227,7 +227,6 @@ def reverse_transform(image, size):
     return image
 
 
-
 def quantize(matrix, n):
     """n: кэф квантования
        matrix: матрица полученная на 3 шаге"""

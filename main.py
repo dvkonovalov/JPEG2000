@@ -331,6 +331,7 @@ def reverse_quantize(matrix, size, n):
     return original_matrix
 
 
+
 def convert_RGB_to_YCbCr(pixel):
     """
     Перевод пикселя из формата RGB в формат YCbCr

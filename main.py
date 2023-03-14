@@ -744,7 +744,6 @@ def read_data(path):
         else:
             flag = False
         ret_dict['on_transform'] = flag
-        print(flag)
     return ret_dict
 
 

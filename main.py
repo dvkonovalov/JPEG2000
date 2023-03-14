@@ -20,8 +20,8 @@ q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                 [18, 21, 26, 66, 99, 99, 99, 99],
                 [24, 26, 56, 99, 99, 99, 99, 99],
                 [47, 66, 99, 99, 99, 99, 99, 99],
-                [99, 99, 99, 99, 99, 99, 99, 99],
-                [99, 99, 99, 99, 99, 99, 99, 99],
+                [99, 99, 99, 99, 33, 33, 99, 99],
+                [99, 99, 99, 99, 33, 33, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99]])
 
@@ -494,6 +494,7 @@ def mq_coder(matrix, size):
                 #фиксим иногда вылет исключения
                 if (le > h):
                     h = le
+                    print(1111)
                 while (True):
                     if (h < half):
                         string1 += '0' + '1' * bits_to_follow
@@ -676,16 +677,16 @@ def show_image():
 
 # convert_to_JPEG('example.jpg')
 # show_image()
-
+koef = 0.06
 matrix, size = get_matrix_pixel('example.jpg')
-matrix = convert_image_to_YCbCr(matrix, size)
 matrix, mas_st = dc_level_shift(matrix, size)
+matrix = convert_image_to_YCbCr(matrix, size)
 matrix = wavelet(matrix, size)
-# matrix = quantize(matrix, 1)
+matrix = quantize(matrix, koef)
 matrix, dest = mq_coder(matrix, size)
 matrix = mq_coder_revers(matrix, size, dest)
-# matrix = reverse_quantize(matrix, size, 1)
+matrix = reverse_quantize(matrix, size, koef)
 matrix = wavelet_reverse(matrix, size)
-matrix = dc_level_shift_revers(matrix, size, mas_st)
 matrix = convert_image_to_RGB(matrix, size)
+matrix = dc_level_shift_revers(matrix, size, mas_st)
 get_image_from_array(matrix, size)

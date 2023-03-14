@@ -679,7 +679,7 @@ def read_data(path):
 
 
 
-def convert_to_JPEG(path, path_save, quantize_koef = 0.1):
+def convert_to_JPEG(path, path_save, quantize_koef = 0.1, on_transform = False):
     matrix, size = get_matrix_pixel(path)   #size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
@@ -715,8 +715,8 @@ def convert_image(path, path_save):
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
     save_image(matrix,  size, path_save)
 
-convert_to_JPEG('example2.jpg', "D:\Downalds\ test.jpeg2000")
-show_image("D:\Downalds\ test.jpeg2000")
+# convert_to_JPEG('example2.jpg', "D:\Downalds\ test.jpeg2000")
+# show_image("D:\Downalds\ test.jpeg2000")
 # koef = 0.1
 # matrix, size = get_matrix_pixel('example1.jpg')
 # matrix, mas_st = dc_level_shift(matrix, size)

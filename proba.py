@@ -7,7 +7,7 @@ data = open('file.jpeg2000', 'r')
 for i in range(5):
     bitstring = data.readline()
 
-for i in range(1):
+for i in range(3):
     bitstring = data.readline()
     print(len(bitstring))
     splits = [bitstring[x:x + 8] for x in range(0, len(bitstring)-8, 8)]

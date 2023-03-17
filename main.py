@@ -1,3 +1,5 @@
+import time
+
 from PIL import Image
 from math import floor
 from math import ceil
@@ -369,6 +371,7 @@ def get_image_from_array(massiv, size):
         for j in range(size[1]):
             matrix[i, j] = tuple(massiv[i, j])
     img.show()
+    img.save('test1111.jpg')
     return True
 
 
@@ -564,12 +567,17 @@ def mq_coder(matrix, size):
     mas = []
 
     for rounds in range(3):
+        # if rounds<2:
+        #     continue
         string1 = ''
         le = 0
         h = 65535
         bits_to_follow = 0
         for i in range(size[0]):
             for j in range(size[1]):
+                # if i>=1044 and j>=854 and rounds==2:
+                #     print(i, j, le, h, le + (distribution[rounds][component][0] * (h - le + 1)) // delitel, le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1)
+                #     time.sleep(1)
                 pixel = matrix[i, j]
                 component = pixel[rounds]
                 ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
@@ -650,7 +658,7 @@ def mq_coder_revers(mas, size, distrb):
                 l += l
                 h += h + 1
                 next_pos += 1
-                if (next_pos == len(string)):
+                if (next_pos >= len(string)):
                     break
                 value = value * 2 + int(string[next_pos])
             component_pixel = j
@@ -795,15 +803,19 @@ def convert_image(path, path_save):
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
     save_image(matrix, size, path_save)
 
-# convert_to_JPEG('example1.jpg', "D:\Downalds\ test.jpeg2000")
+# convert_to_JPEG('example1.jpg', "file.jpeg2000")
 # show_image("D:\Downalds\ test.jpeg2000")
 # koef = 0.1
+
+
+
 # matrix, size = get_matrix_pixel('example1.jpg')
 # matrix, mas_st = dc_level_shift(matrix, size)
 # matrix = convert_image_to_YCbCr(matrix, size)
 # matrix = transform(matrix, size)
 # matrix = quantize(matrix, koef)
 # matrix, dest = mq_coder(matrix, size)
+#
 # matrix = mq_coder_revers(matrix, size, dest)
 # matrix = reverse_quantize(matrix, size, koef)
 # matrix = reverse_transform(matrix, size)

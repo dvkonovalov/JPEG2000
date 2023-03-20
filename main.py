@@ -531,7 +531,7 @@ def mq_coder(matrix, size):
     for rounds in range(3):
         string1 = ''
         distribution = distribution_massiv[rounds]
-        delitel = distribution[255][1]
+        delitel = distribution[512][1]
         le = 0
         h = 65535
         bits_to_follow = 0
@@ -564,7 +564,7 @@ def mq_coder(matrix, size):
                     h += h + 1
 
                 distribution = update_destribution(distribution, component)
-                delitel = distribution[255][1]
+                delitel = distribution[512][1]
         distribution_massiv[rounds] = distribution
         mas.append(string1)
     return mas
@@ -577,8 +577,7 @@ def mq_coder_revers(mas, size):
     :param size: размеры получаемой матрицы в виде кортежа
     :return: матрица изображения после декодирования
     """
-    img = Image.new('RGB', size, 'white')
-    matrix = img.load()
+    matrix = np.array([[(0, 0, 0) for j in range(size[1])] for i in range(size[0])])
     distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
@@ -586,7 +585,7 @@ def mq_coder_revers(mas, size):
 
     for rounds in range(3):
         distribution = distribution_massiv[rounds]
-        delitel = distribution[255][1]
+        delitel = distribution[512][1]
         string = mas[rounds]
         l = 0
         h = 65535
@@ -634,7 +633,7 @@ def mq_coder_revers(mas, size):
             width += 1
 
             distribution = update_destribution(distribution, j)
-            delitel = distribution[255][1]
+            delitel = distribution[512][1]
 
             if (width == size[1]):
                 height += 1
@@ -774,11 +773,10 @@ def convert_image(path, path_save):
 # show_image("D:\Downalds\ test.jpeg2000")
 koef = 0.1
 
-
 matrix1, size = get_matrix_pixel('example.jpg')
 matrix, size = get_matrix_pixel('example.jpg')
-# matrix, mas_st = dc_level_shift(matrix, size)
-# matrix = convert_image_to_YCbCr(matrix, size)
+matrix, mas_st = dc_level_shift(matrix, size)
+matrix = convert_image_to_YCbCr(matrix, size)
 # matrix = transform(matrix, size)
 # matrix = quantize(matrix, koef)
 matrix = mq_coder(matrix, size)
@@ -787,8 +785,8 @@ print(len(matrix[0]) + len(matrix[1]) + len(matrix[2]))
 matrix = mq_coder_revers(matrix, size)
 # matrix = reverse_quantize(matrix, size, koef)
 # matrix = reverse_transform(matrix, size)
-# matrix = convert_image_to_RGB(matrix, size)
-# matrix = dc_level_shift_revers(matrix, size, mas_st)
+matrix = convert_image_to_RGB(matrix, size)
+matrix = dc_level_shift_revers(matrix, size, mas_st)
 get_image_from_array(matrix, size)
 
 for i in range(size[0]):

@@ -1,16 +1,15 @@
-from PIL import Image
+import numpy as np
 def get_destribution():
     dest_y = {}
     dest_cb = {}
     dest_cr = {}
     pr = 0
-    for i in range(0, 256):
-        dest_y[i] = [pr, pr+1]
-        dest_cb[i] = [pr, pr+1]
-        dest_cr[i] = [pr, pr+1]
+    for i in range(-256, 513):
+        dest_y[i] = [pr, pr + 1]
+        dest_cb[i] = [pr, pr + 1]
+        dest_cr[i] = [pr, pr + 1]
         pr += 1
     return [dest_y, dest_cb, dest_cr]
-
 
 
 def update_destribution(distribution, element):
@@ -18,12 +17,10 @@ def update_destribution(distribution, element):
     for i in distribution:
         distribution[i][0] += pr
         distribution[i][1] += pr
-        if i==element:
+        if i == element:
             distribution[i][1] += 1
             pr += 1
     return distribution
-
-
 
 
 def mq_coder(matrix, size):
@@ -38,23 +35,25 @@ def mq_coder(matrix, size):
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
-    mas = []
+    mas = [[], [], []]
 
     for rounds in range(3):
-        string1 = ''
-        distribution = distribution_massiv[rounds]
-        delitel = distribution[255][1]
-        le = 0
-        h = 65535
-        bits_to_follow = 0
         for i in range(size[0]):
-            for j in range(size[1]):
+            distribution = distribution_massiv[rounds]
+            delitel = distribution[512][1]
+            le = 0
+            h = 65535
+            bits_to_follow = 0
+            string1 = ''
 
+            for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
                 ln = le + (distribution[component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[component][1] * (h - le + 1)) // delitel - 1
                 le = ln
+                if le>h:
+                    print(distribution[component])
 
                 while (True):
                     if (h < half):
@@ -75,30 +74,33 @@ def mq_coder(matrix, size):
                     h += h + 1
 
                 distribution = update_destribution(distribution, component)
-                delitel = distribution[255][1]
-        distribution_massiv[rounds] = distribution
-        mas.append(string1)
+                delitel = distribution[512][1]
+
+            mas[rounds].append(string1)
     return mas
 
 
-def mq_coder_revers(mas, size):
+def mq_coder_revers(data_mas, size):
     """
     Арифметическое декодирование (обратный MQ-кодер)
     :param mas: Массив с закодированными последовательностями
     :param size: размеры получаемой матрицы в виде кортежа
     :return: матрица изображения после декодирования
     """
-    img = Image.new('RGB', size, 'white')
-    matrix = img.load()
+    matrix = np.array([[(0, 0, 0) for j in range(size[1])] for i in range(size[0])])
     distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
 
     for rounds in range(3):
-        distribution = distribution_massiv[rounds]
-        delitel = distribution[256][1]
-        string = mas[rounds]
+        mas = data_mas[rounds]
+
+        for i in range(size[1]):
+
+            distribution = distribution_massiv[rounds]
+            delitel = distribution[512][1]
+            string = mas[]
         l = 0
         h = 65535
         value = int(string[:16], 2)
@@ -145,7 +147,7 @@ def mq_coder_revers(mas, size):
             width += 1
 
             distribution = update_destribution(distribution, j)
-            delitel = distribution[255][1]
+            delitel = distribution[512][1]
 
             if (width == size[1]):
                 height += 1

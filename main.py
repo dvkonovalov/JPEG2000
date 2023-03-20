@@ -490,65 +490,28 @@ def convert_image_to_RGB(matrix, size):
     return matrix
 
 
-def get_destribution(matrix, size):
-    """
-    Получение распределения значений пикселей
-    :param matrix: матрица изображения
-    :param size: кортеж с размерами изображения - (высота, ширина)
-    :return: кортеж с словарями распределений
-    """
-    distribution_y = []
-    distribution_cb = []
-    distribution_cr = []
-    for i in range(256 * 2 + 1):
-        distribution_y.append([i - 256, 0, 0])
-        distribution_cb.append([i - 256, 0, 0])
-        distribution_cr.append([i - 256, 0, 0])
-
-    for i in range(size[0]):
-        for j in range(size[1]):
-            pixel = matrix[i, j]
-            distribution_y[pixel[0] + 256][1] += 1
-            distribution_cb[pixel[1] + 256][1] += 1
-            distribution_cr[pixel[2] + 256][1] += 1
-
-    # Сортируем полученные массивы распределений
-    distribution_y.sort(key=lambda x: x[1], reverse=True)
-    distribution_cb.sort(key=lambda x: x[1], reverse=True)
-    distribution_cb.sort(key=lambda x: x[1], reverse=True)
-
-    distribution_y[0][2] = distribution_y[0][1]
-    distribution_cb[0][2] = distribution_cb[0][1]
-    distribution_cr[0][2] = distribution_cr[0][1]
-
-    for i in range(256 * 2 + 1):
-        distribution_y[i][2] = distribution_y[i - 1][2] + distribution_y[i][1]
-        distribution_cb[i][2] = distribution_cb[i - 1][2] + distribution_cb[i][1]
-        distribution_cr[i][2] = distribution_cr[i - 1][2] + distribution_cr[i][1]
-
-    # переделываем массивы в словари для удобства использования в дальнейшем
-    dist_y = {}
-    dist_cb = {}
-    dist_cr = {}
+def get_destribution():
+    dest_y = {}
+    dest_cb = {}
+    dest_cr = {}
     pr = 0
-    for element in distribution_y:
-        if (element[1] == 0):
-            continue
-        dist_y[element[0]] = (pr, element[2])
-        pr = element[2]
+    for i in range(-256, 513):
+        dest_y[i] = [pr, pr + 1]
+        dest_cb[i] = [pr, pr + 1]
+        dest_cr[i] = [pr, pr + 1]
+        pr += 1
+    return [dest_y, dest_cb, dest_cr]
+
+
+def update_destribution(distribution, element):
     pr = 0
-    for element in distribution_cb:
-        if (element[1] == 0):
-            continue
-        dist_cb[element[0]] = (pr, element[2])
-        pr = element[2]
-    pr = 0
-    for element in distribution_cr:
-        if (element[1] == 0):
-            continue
-        dist_cr[element[0]] = (pr, element[2])
-        pr = element[2]
-    return (dist_y, dist_cb, dist_cr)
+    for i in distribution:
+        distribution[i][0] += pr
+        distribution[i][1] += pr
+        if i == element:
+            distribution[i][1] += 1
+            pr += 1
+    return distribution
 
 
 def mq_coder(matrix, size):
@@ -559,33 +522,29 @@ def mq_coder(matrix, size):
     :return: массив со значениями данных после арифметического кодирования,
     кортеж с распределениями из функции get_destribution
     """
-    distribution = get_destribution(matrix, size)
-    delitel = size[0] * size[1]
+    distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
     mas = []
 
     for rounds in range(3):
-        # if rounds<2:
-        #     continue
         string1 = ''
+        distribution = distribution_massiv[rounds]
+        delitel = distribution[255][1]
         le = 0
         h = 65535
         bits_to_follow = 0
         for i in range(size[0]):
             for j in range(size[1]):
-                # if i>=1044 and j>=854 and rounds==2:
-                #     print(i, j, le, h, le + (distribution[rounds][component][0] * (h - le + 1)) // delitel, le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1)
-                #     time.sleep(1)
                 pixel = matrix[i, j]
                 component = pixel[rounds]
-                ln = le + (distribution[rounds][component][0] * (h - le + 1)) // delitel
-                h = le + (distribution[rounds][component][1] * (h - le + 1)) // delitel - 1
+                ln = le + (distribution[component][0] * (h - le + 1)) // delitel
+                h = le + (distribution[component][1] * (h - le + 1)) // delitel - 1
                 le = ln
-                # фиксим иногда вылет исключения
-                if (le > h):
-                    h = le
+                if le>h:
+                    print(distribution[component])
+
                 while (True):
                     if (h < half):
                         string1 += '0' + '1' * bits_to_follow
@@ -603,11 +562,15 @@ def mq_coder(matrix, size):
                         break
                     le += le
                     h += h + 1
+
+                distribution = update_destribution(distribution, component)
+                delitel = distribution[255][1]
+        distribution_massiv[rounds] = distribution
         mas.append(string1)
-    return mas, distribution
+    return mas
 
 
-def mq_coder_revers(mas, size, distrb):
+def mq_coder_revers(mas, size):
     """
     Арифметическое декодирование (обратный MQ-кодер)
     :param mas: Массив с закодированными последовательностями
@@ -616,14 +579,14 @@ def mq_coder_revers(mas, size, distrb):
     """
     img = Image.new('RGB', size, 'white')
     matrix = img.load()
-    distribution = distrb
-    delitel = size[0] * size[1]
+    distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
 
     for rounds in range(3):
-        dist_comp = distribution[rounds]
+        distribution = distribution_massiv[rounds]
+        delitel = distribution[255][1]
         string = mas[rounds]
         l = 0
         h = 65535
@@ -634,13 +597,13 @@ def mq_coder_revers(mas, size, distrb):
         while (next_pos < len(string)):
             freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
             j = 0
-            for j in dist_comp:
-                if (dist_comp[j][1] <= freq):
+            for j in distribution:
+                if (distribution[j][1] <= freq):
                     continue
                 else:
                     break
-            ln = l + (dist_comp[j][0] * (h - l + 1)) // delitel
-            h = l + (dist_comp[j][1] * (h - l + 1)) // delitel - 1
+            ln = l + (distribution[j][0] * (h - l + 1)) // delitel
+            h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
             l = ln
             while (True):
                 if (h < half):
@@ -661,6 +624,7 @@ def mq_coder_revers(mas, size, distrb):
                 if (next_pos >= len(string)):
                     break
                 value = value * 2 + int(string[next_pos])
+
             component_pixel = j
             pixel = matrix[height, width]
             pix = list(pixel)
@@ -668,6 +632,10 @@ def mq_coder_revers(mas, size, distrb):
             pix = tuple(pix)
             matrix[height, width] = pix
             width += 1
+
+            distribution = update_destribution(distribution, j)
+            delitel = distribution[255][1]
+
             if (width == size[1]):
                 height += 1
                 width = 0
@@ -752,7 +720,6 @@ def read_data(path):
         else:
             flag = False
         ret_dict['on_transform'] = flag
-        print(flag)
     return ret_dict
 
 
@@ -779,7 +746,7 @@ def convert_to_JPEG(path, path_save, quantize_koef=0.1, on_transform=False):
 def show_image(path):
     data = read_data(path)
     size = data['size']
-    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = mq_coder_revers(data['mas_values'], size)
     matrix = reverse_quantize(matrix, size, data['quantize_koef'])
     if data['on_transform']:
         matrix = reverse_transform(matrix, size)
@@ -793,7 +760,7 @@ def show_image(path):
 def convert_image(path, path_save):
     data = read_data(path)
     size = data['size']
-    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = mq_coder_revers(data['mas_values'], size)
     matrix = reverse_quantize(matrix, size, data['quantize_koef'])
     if data['on_transform']:
         matrix = reverse_transform(matrix, size)
@@ -805,20 +772,26 @@ def convert_image(path, path_save):
 
 # convert_to_JPEG('example1.jpg', "file.jpeg2000")
 # show_image("D:\Downalds\ test.jpeg2000")
-# koef = 0.1
+koef = 0.1
 
 
-
-# matrix, size = get_matrix_pixel('example1.jpg')
+matrix1, size = get_matrix_pixel('example.jpg')
+matrix, size = get_matrix_pixel('example.jpg')
 # matrix, mas_st = dc_level_shift(matrix, size)
 # matrix = convert_image_to_YCbCr(matrix, size)
 # matrix = transform(matrix, size)
 # matrix = quantize(matrix, koef)
-# matrix, dest = mq_coder(matrix, size)
-#
-# matrix = mq_coder_revers(matrix, size, dest)
+matrix = mq_coder(matrix, size)
+print(len(matrix[0]) + len(matrix[1]) + len(matrix[2]))
+
+matrix = mq_coder_revers(matrix, size)
 # matrix = reverse_quantize(matrix, size, koef)
 # matrix = reverse_transform(matrix, size)
 # matrix = convert_image_to_RGB(matrix, size)
 # matrix = dc_level_shift_revers(matrix, size, mas_st)
-# get_image_from_array(matrix, size)
+get_image_from_array(matrix, size)
+
+for i in range(size[0]):
+    for j in range(size[1]):
+        if list(matrix[i, j])!=list(matrix1[i,j]):
+            print(i, j)

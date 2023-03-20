@@ -39,13 +39,14 @@ def mq_coder(matrix, size):
 
     for rounds in range(3):
         for i in range(size[0]):
+            string1 = ''
             distribution = distribution_massiv[rounds]
             delitel = distribution[512][1]
+            if delitel!=769:
+                print(False)
             le = 0
             h = 65535
             bits_to_follow = 0
-            string1 = ''
-
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
@@ -75,12 +76,11 @@ def mq_coder(matrix, size):
 
                 distribution = update_destribution(distribution, component)
                 delitel = distribution[512][1]
-
             mas[rounds].append(string1)
     return mas
 
 
-def mq_coder_revers(data_mas, size):
+def mq_coder_revers(mas_data, size):
     """
     Арифметическое декодирование (обратный MQ-кодер)
     :param mas: Массив с закодированными последовательностями
@@ -94,64 +94,59 @@ def mq_coder_revers(data_mas, size):
     third_qtr = first_qtr * 3
 
     for rounds in range(3):
-        mas = data_mas[rounds]
-
-        for i in range(size[1]):
-
+        mas = mas_data[rounds]
+        for height in range(size[0]):
             distribution = distribution_massiv[rounds]
             delitel = distribution[512][1]
-            string = mas[]
-        l = 0
-        h = 65535
-        value = int(string[:16], 2)
-        next_pos = 15
-        height = 0
-        width = 0
-        while (next_pos < len(string)):
-            freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
-            j = 0
-            for j in distribution:
-                if (distribution[j][1] <= freq):
-                    continue
-                else:
-                    break
-            ln = l + (distribution[j][0] * (h - l + 1)) // delitel
-            h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
-            l = ln
-            while (True):
-                if (h < half):
-                    pass
-                elif (l >= half):
-                    l -= half
-                    h -= half
-                    value -= half
-                elif ((l >= first_qtr) and (h < third_qtr)):
-                    l -= first_qtr
-                    h -= first_qtr
-                    value -= first_qtr
-                else:
-                    break
-                l += l
-                h += h + 1
-                next_pos += 1
-                if (next_pos >= len(string)):
-                    break
-                value = value * 2 + int(string[next_pos])
+            string1 = mas[height]
+            l = 0
+            h = 65535
+            value = int(string1[:16], 2)
+            next_pos = 15
+            width = 0
+            while (next_pos < len(string1)):
+                freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
+                j = 0
+                for j in distribution:
+                    if (distribution[j][1] <= freq):
+                        continue
+                    else:
+                        break
+                ln = l + (distribution[j][0] * (h - l + 1)) // delitel
+                h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
+                l = ln
+                while (True):
+                    if (h < half):
+                        pass
+                    elif (l >= half):
+                        l -= half
+                        h -= half
+                        value -= half
+                    elif ((l >= first_qtr) and (h < third_qtr)):
+                        l -= first_qtr
+                        h -= first_qtr
+                        value -= first_qtr
+                    else:
+                        break
+                    l += l
+                    h += h + 1
+                    next_pos += 1
+                    if (next_pos >= len(string1)):
+                        break
+                    value = value * 2 + int(string1[next_pos])
 
-            component_pixel = j
-            pixel = matrix[height, width]
-            pix = list(pixel)
-            pix[rounds] = component_pixel
-            pix = tuple(pix)
-            matrix[height, width] = pix
-            width += 1
+                component_pixel = j
+                pixel = matrix[height, width]
+                pix = list(pixel)
+                pix[rounds] = component_pixel
+                pix = tuple(pix)
+                matrix[height, width] = pix
+                width += 1
 
-            distribution = update_destribution(distribution, j)
-            delitel = distribution[512][1]
+                distribution = update_destribution(distribution, j)
+                delitel = distribution[512][1]
 
-            if (width == size[1]):
-                height += 1
-                width = 0
-                if (height == size[0]):
-                    break
+                if (width == size[1]):
+                    width = 0
+
     return matrix

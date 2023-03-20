@@ -25,253 +25,211 @@ q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99]])
 
 
-def wavelet(image, size):
+def wavelet_without_loss(image, size):
     rows_count = size[0]
     columns_count = size[1]
-    intermediate_result_1 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    intermediate_result_2 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    intermediate_result_3 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    result = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-
+    intermediate_1 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    intermediate_2 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    intermediate_3 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    result = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
     for i in range(rows_count):
         for j in range(1, columns_count, 2):
             if j + 1 != columns_count:
                 y = image[i, j][0] - floor((image[i, j - 1][0] + image[i, j + 1][0]) / 2)
                 cb = image[i, j][1] - floor((image[i, j - 1][1] + image[i, j + 1][1]) / 2)
                 cr = image[i, j][2] - floor((image[i, j - 1][2] + image[i, j + 1][2]) / 2)
-                intermediate_result_1[i, j] = (y, cb, cr)
             else:
                 y = image[i, j][0] - floor((image[i, j - 1][0] + image[i, j - 1][0]) / 2)
                 cb = image[i, j][1] - floor((image[i, j - 1][1] + image[i, j - 1][1]) / 2)
                 cr = image[i, j][2] - floor((image[i, j - 1][2] + image[i, j - 1][2]) / 2)
-                intermediate_result_1[i, j] = (y, cb, cr)
+            intermediate_1[i, j] = (y, cb, cr)
         for j in range(0, columns_count, 2):
             if j + 1 != columns_count and j != 0:
-                y = image[i, j][0] + floor(
-                    (intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor(
-                    (intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor(
-                    (intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
-                intermediate_result_1[i, j] = (y, cb, cr)
+                y = image[i, j][0] + floor((intermediate_1[i, j - 1][0] + intermediate_1[i, j + 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor((intermediate_1[i, j - 1][1] + intermediate_1[i, j + 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor((intermediate_1[i, j - 1][2] + intermediate_1[i, j + 1][2] + 2) / 4)
             elif j + 1 == columns_count:
-                y = image[i, j][0] + floor(
-                    (intermediate_result_1[i, j - 1][0] + intermediate_result_1[i, j - 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor(
-                    (intermediate_result_1[i, j - 1][1] + intermediate_result_1[i, j - 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor(
-                    (intermediate_result_1[i, j - 1][2] + intermediate_result_1[i, j - 1][2] + 2) / 4)
-                intermediate_result_1[i, j] = (y, cb, cr)
+                y = image[i, j][0] + floor((intermediate_1[i, j - 1][0] + intermediate_1[i, j - 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor((intermediate_1[i, j - 1][1] + intermediate_1[i, j - 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor((intermediate_1[i, j - 1][2] + intermediate_1[i, j - 1][2] + 2) / 4)
             else:
-                y = image[i, j][0] + floor(
-                    (intermediate_result_1[i, j + 1][0] + intermediate_result_1[i, j + 1][0] + 2) / 4)
-                cb = image[i, j][1] + floor(
-                    (intermediate_result_1[i, j + 1][1] + intermediate_result_1[i, j + 1][1] + 2) / 4)
-                cr = image[i, j][2] + floor(
-                    (intermediate_result_1[i, j + 1][2] + intermediate_result_1[i, j + 1][2] + 2) / 4)
-                intermediate_result_1[i, j] = (y, cb, cr)
+                y = image[i, j][0] + floor((intermediate_1[i, j + 1][0] + intermediate_1[i, j + 1][0] + 2) / 4)
+                cb = image[i, j][1] + floor((intermediate_1[i, j + 1][1] + intermediate_1[i, j + 1][1] + 2) / 4)
+                cr = image[i, j][2] + floor((intermediate_1[i, j + 1][2] + intermediate_1[i, j + 1][2] + 2) / 4)
+            intermediate_1[i, j] = (y, cb, cr)
+
+    first_part = [(0, 0, 0) for _ in range(ceil(columns_count / 2))]
+    second_part = [(0, 0, 0) for _ in range(floor(columns_count / 2))]
 
     for i in range(rows_count):
-        first_part = np.array([(0, 0, 0)] * ceil(columns_count / 2))
-        second_part = np.array([(0, 0, 0)] * floor(columns_count / 2))
         for j in range(columns_count):
             if j % 2 == 0:
-                first_part[int(j / 2)] = intermediate_result_1[i, j]
+                first_part[int(j / 2)] = intermediate_1[i, j]
             else:
-                second_part[int((j - 1) / 2)] = intermediate_result_1[i, j]
+                second_part[int((j - 1) / 2)] = intermediate_1[i, j]
         array = np.concatenate([first_part, second_part])
-        for j in range(columns_count):
-            intermediate_result_2[i, j] = array[j]
+        intermediate_2[i] = array
 
     for j in range(columns_count):
         for i in range(1, rows_count, 2):
             if i + 1 != rows_count:
-                y = intermediate_result_2[i, j][0] - floor(
-                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
-                cb = intermediate_result_2[i, j][1] - floor(
-                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
-                cr = intermediate_result_2[i, j][2] - floor(
-                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
-                intermediate_result_3[i, j] = (y, cb, cr)
+                y = intermediate_2[i, j][0] - floor((intermediate_2[i + 1, j][0] + intermediate_2[i - 1, j][0]) / 2)
+                cb = intermediate_2[i, j][1] - floor((intermediate_2[i + 1, j][1] + intermediate_2[i - 1, j][1]) / 2)
+                cr = intermediate_2[i, j][2] - floor((intermediate_2[i + 1, j][2] + intermediate_2[i - 1, j][2]) / 2)
             else:
-                y = intermediate_result_2[i, j][0] - floor(
-                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
-                cb = intermediate_result_2[i, j][1] - floor(
-                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
-                cr = intermediate_result_2[i, j][2] - floor(
-                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
-                intermediate_result_3[i, j] = (y, cb, cr)
+                y = intermediate_2[i, j][0] - floor((intermediate_2[i - 1, j][0] + intermediate_2[i - 1, j][0]) / 2)
+                cb = intermediate_2[i, j][1] - floor((intermediate_2[i - 1, j][1] + intermediate_2[i - 1, j][1]) / 2)
+                cr = intermediate_2[i, j][2] - floor((intermediate_2[i - 1, j][2] + intermediate_2[i - 1, j][2]) / 2)
+            intermediate_3[i, j] = (y, cb, cr)
         for i in range(0, rows_count, 2):
             if i + 1 != rows_count and i != 0:
-                y = intermediate_result_2[i, j][0] + floor(
-                    (intermediate_result_3[i - 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor(
-                    (intermediate_result_3[i - 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor(
-                    (intermediate_result_3[i - 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
-                intermediate_result_3[i, j] = (y, cb, cr)
+                y = intermediate_2[i, j][0] + floor((intermediate_3[i + 1, j][0] + intermediate_3[i - 1, j][0] + 2) / 4)
+                cb = intermediate_2[i, j][1] + floor((intermediate_3[i + 1, j][1] + intermediate_3[i - 1, j][1] + 2) / 4)
+                cr = intermediate_2[i, j][2] + floor((intermediate_3[i + 1, j][2] + intermediate_3[i - 1, j][2] + 2) / 4)
             elif i + 1 == rows_count:
-                y = intermediate_result_2[i, j][0] + floor(
-                    (intermediate_result_3[i - 1, j][0] + intermediate_result_3[i - 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor(
-                    (intermediate_result_3[i - 1, j][1] + intermediate_result_3[i - 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor(
-                    (intermediate_result_3[i - 1, j][2] + intermediate_result_3[i - 1, j][2] + 2) / 4)
-                intermediate_result_3[i, j] = (y, cb, cr)
+                y = intermediate_2[i, j][0] + floor((intermediate_3[i - 1, j][0] + intermediate_3[i - 1, j][0] + 2) / 4)
+                cb = intermediate_2[i, j][1] + floor((intermediate_3[i - 1, j][1] + intermediate_3[i - 1, j][1] + 2) / 4)
+                cr = intermediate_2[i, j][2] + floor((intermediate_3[i - 1, j][2] + intermediate_3[i - 1, j][2] + 2) / 4)
             else:
-                y = intermediate_result_2[i, j][0] + floor(
-                    (intermediate_result_3[i + 1, j][0] + intermediate_result_3[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_2[i, j][1] + floor(
-                    (intermediate_result_3[i + 1, j][1] + intermediate_result_3[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_2[i, j][2] + floor(
-                    (intermediate_result_3[i + 1, j][2] + intermediate_result_3[i + 1, j][2] + 2) / 4)
-                intermediate_result_3[i, j] = (y, cb, cr)
+                y = intermediate_2[i, j][0] + floor((intermediate_3[i + 1, j][0] + intermediate_3[i + 1, j][0] + 2) / 4)
+                cb = intermediate_2[i, j][1] + floor((intermediate_3[i + 1, j][1] + intermediate_3[i + 1, j][1] + 2) / 4)
+                cr = intermediate_2[i, j][2] + floor((intermediate_3[i + 1, j][2] + intermediate_3[i + 1, j][2] + 2) / 4)
+            intermediate_3[i, j] = (y, cb, cr)
+
+    first_part = np.array([(0, 0, 0) for _ in range(ceil(rows_count / 2))])
+    second_part = np.array([(0, 0, 0) for _ in range(floor(rows_count / 2))])
 
     for j in range(columns_count):
-        first_part = np.array([(0, 0, 0)] * ceil(rows_count / 2))
-        second_part = np.array([(0, 0, 0)] * floor(rows_count / 2))
         for i in range(rows_count):
             if i % 2 == 0:
-                first_part[int(i / 2)] = intermediate_result_3[i, j]
+                first_part[int(i / 2)] = intermediate_3[i, j]
             else:
-                second_part[int((i - 1) / 2)] = intermediate_result_3[i, j]
+                second_part[int((i - 1) / 2)] = intermediate_3[i, j]
         array = np.concatenate([first_part, second_part])
         for i in range(rows_count):
             result[i, j] = array[i]
+
     return result
 
 
-def wavelet_reverse(image, size):
+def wavelet_without_loss_reverse(image, size):
     rows_count = size[0]
     columns_count = size[1]
-    intermediate_result_1 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    intermediate_result_2 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    intermediate_result_3 = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
-    result = np.array([[(0, 0, 0)] * columns_count for _ in range(rows_count)])
+    intermediate_1 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    intermediate_2 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    intermediate_3 = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    result = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+    border = rows_count / 2
     for j in range(columns_count):
-        for i in range(ceil(rows_count / 2)):
-            if i < rows_count / 2:
-                intermediate_result_1[2 * i, j] = image[i, j]
-            else:
-                intermediate_result_1[2 * i - 1, j] = image[i, j]
+        for i in range(ceil(border)):
+            intermediate_1[i * 2, j] = image[i, j]
+        for i in range(ceil(border), rows_count):
+            intermediate_1[2 * (i - ceil(border)) + 1, j] = image[i, j]
 
     for j in range(columns_count):
         for i in range(0, rows_count, 2):
             if i + 1 != rows_count and i != 0:
-                y = intermediate_result_1[i, j][0] - floor(
-                    (intermediate_result_1[i - 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor(
-                    (intermediate_result_1[i - 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor(
-                    (intermediate_result_1[i - 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
-                intermediate_result_2[i, j] = (y, cb, cr)
+                y = intermediate_1[i, j][0] - floor((intermediate_1[i - 1, j][0] + intermediate_1[i + 1, j][0] + 2) / 4)
+                cb = intermediate_1[i, j][1] - floor((intermediate_1[i - 1, j][1] + intermediate_1[i + 1, j][1] + 2) / 4)
+                cr = intermediate_1[i, j][2] - floor((intermediate_1[i - 1, j][2] + intermediate_1[i + 1, j][2] + 2) / 4)
             elif i + 1 == rows_count:
-                y = intermediate_result_1[i, j][0] - floor(
-                    (intermediate_result_1[i - 1, j][0] + intermediate_result_1[i - 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor(
-                    (intermediate_result_1[i - 1, j][1] + intermediate_result_1[i - 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor(
-                    (intermediate_result_1[i - 1, j][2] + intermediate_result_1[i - 1, j][2] + 2) / 4)
-                intermediate_result_2[i, j] = (y, cb, cr)
+                y = intermediate_1[i, j][0] - floor((intermediate_1[i - 1, j][0] + intermediate_1[i - 1, j][0] + 2) / 4)
+                cb = intermediate_1[i, j][1] - floor((intermediate_1[i - 1, j][1] + intermediate_1[i - 1, j][1] + 2) / 4)
+                cr = intermediate_1[i, j][2] - floor((intermediate_1[i - 1, j][2] + intermediate_1[i - 1, j][2] + 2) / 4)
             else:
-                y = intermediate_result_1[i, j][0] - floor(
-                    (intermediate_result_1[i + 1, j][0] + intermediate_result_1[i + 1, j][0] + 2) / 4)
-                cb = intermediate_result_1[i, j][1] - floor(
-                    (intermediate_result_1[i + 1, j][1] + intermediate_result_1[i + 1, j][1] + 2) / 4)
-                cr = intermediate_result_1[i, j][2] - floor(
-                    (intermediate_result_1[i + 1, j][2] + intermediate_result_1[i + 1, j][2] + 2) / 4)
-                intermediate_result_2[i, j] = (y, cb, cr)
+                y = intermediate_1[i, j][0] - floor((intermediate_1[i + 1, j][0] + intermediate_1[i + 1, j][0] + 2) / 4)
+                cb = intermediate_1[i, j][1] - floor((intermediate_1[i + 1, j][1] + intermediate_1[i + 1, j][1] + 2) / 4)
+                cr = intermediate_1[i, j][2] - floor((intermediate_1[i + 1, j][2] + intermediate_1[i + 1, j][2] + 2) / 4)
+            intermediate_2[i, j] = (y, cb, cr)
         for i in range(1, rows_count, 2):
             if i + 1 != rows_count:
-                y = intermediate_result_1[i, j][0] + floor(
-                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i + 1, j][0]) / 2)
-                cb = intermediate_result_1[i, j][1] + floor(
-                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i + 1, j][1]) / 2)
-                cr = intermediate_result_1[i, j][2] + floor(
-                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i + 1, j][2]) / 2)
-                intermediate_result_2[i, j] = (y, cb, cr)
+                y = intermediate_1[i, j][0] + floor((intermediate_2[i - 1, j][0] + intermediate_2[i + 1, j][0]) / 2)
+                cb = intermediate_1[i, j][1] + floor((intermediate_2[i - 1, j][1] + intermediate_2[i + 1, j][1]) / 2)
+                cr = intermediate_1[i, j][2] + floor((intermediate_2[i - 1, j][2] + intermediate_2[i + 1, j][2]) / 2)
             else:
-                y = intermediate_result_1[i, j][0] + floor(
-                    (intermediate_result_2[i - 1, j][0] + intermediate_result_2[i - 1, j][0]) / 2)
-                cb = intermediate_result_1[i, j][1] + floor(
-                    (intermediate_result_2[i - 1, j][1] + intermediate_result_2[i - 1, j][1]) / 2)
-                cr = intermediate_result_1[i, j][2] + floor(
-                    (intermediate_result_2[i - 1, j][2] + intermediate_result_2[i - 1, j][2]) / 2)
-                intermediate_result_2[i, j] = (y, cb, cr)
+                y = intermediate_1[i, j][0] + floor((intermediate_2[i - 1, j][0] + intermediate_2[i - 1, j][0]) / 2)
+                cb = intermediate_1[i, j][1] + floor((intermediate_2[i - 1, j][1] + intermediate_2[i - 1, j][1]) / 2)
+                cr = intermediate_1[i, j][2] + floor((intermediate_2[i - 1, j][2] + intermediate_2[i - 1, j][2]) / 2)
+            intermediate_2[i, j] = (y, cb, cr)
+
+    border = columns_count / 2
+    for i in range(rows_count):
+        for j in range(ceil(border)):
+            intermediate_3[i, j * 2] = intermediate_2[i, j]
+        for j in range(ceil(border), columns_count):
+            intermediate_3[i, 1 + 2 * (j - ceil(border))] = intermediate_2[i, j]
 
     for i in range(rows_count):
-        for j in range(ceil(columns_count / 2)):
-            if j < columns_count / 2:
-                intermediate_result_3[i, 2 * j] = intermediate_result_2[i, j]
-            else:
-                intermediate_result_3[i, 2 * j - 1] = intermediate_result_2[i, j]
-    for i in range(rows_count):
         for j in range(0, columns_count, 2):
-            if j + 1 != columns_count and j != 0:
-                y = intermediate_result_3[i, j][0] - floor(
-                    (intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor(
-                    (intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor(
-                    (intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
-                result[i, j] = (y, cb, cr)
+            if j != 0 and j + 1 != columns_count:
+                y = intermediate_3[i, j][0] - floor((intermediate_3[i, j - 1][0] + intermediate_3[i, j + 1][0] + 2) / 4)
+                cb = intermediate_3[i, j][1] - floor((intermediate_3[i, j - 1][1] + intermediate_3[i, j + 1][1] + 2) / 4)
+                cr = intermediate_3[i, j][2] - floor((intermediate_3[i, j - 1][2] + intermediate_3[i, j + 1][2] + 2) / 4)
             elif j + 1 == columns_count:
-                y = intermediate_result_3[i, j][0] - floor(
-                    (intermediate_result_3[i, j - 1][0] + intermediate_result_3[i, j - 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor(
-                    (intermediate_result_3[i, j - 1][1] + intermediate_result_3[i, j - 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor(
-                    (intermediate_result_3[i, j - 1][2] + intermediate_result_3[i, j - 1][2] + 2) / 4)
-                result[i, j] = (y, cb, cr)
+                y = intermediate_3[i, j][0] - floor((intermediate_3[i, j - 1][0] + intermediate_3[i, j - 1][0] + 2) / 4)
+                cb = intermediate_3[i, j][1] - floor((intermediate_3[i, j - 1][1] + intermediate_3[i, j - 1][1] + 2) / 4)
+                cr = intermediate_3[i, j][2] - floor((intermediate_3[i, j - 1][2] + intermediate_3[i, j - 1][2] + 2) / 4)
             else:
-                y = intermediate_result_3[i, j][0] - floor(
-                    (intermediate_result_3[i, j + 1][0] + intermediate_result_3[i, j + 1][0] + 2) / 4)
-                cb = intermediate_result_3[i, j][1] - floor(
-                    (intermediate_result_3[i, j + 1][1] + intermediate_result_3[i, j + 1][1] + 2) / 4)
-                cr = intermediate_result_3[i, j][2] - floor(
-                    (intermediate_result_3[i, j + 1][2] + intermediate_result_3[i, j + 1][2] + 2) / 4)
-                result[i, j] = (y, cb, cr)
+                y = intermediate_3[i, j][0] - floor((intermediate_3[i, j + 1][0] + intermediate_3[i, j + 1][0] + 2) / 4)
+                cb = intermediate_3[i, j][1] - floor((intermediate_3[i, j + 1][1] + intermediate_3[i, j + 1][1] + 2) / 4)
+                cr = intermediate_3[i, j][2] - floor((intermediate_3[i, j + 1][2] + intermediate_3[i, j + 1][2] + 2) / 4)
+            result[i, j] = (y, cb, cr)
         for j in range(1, columns_count, 2):
             if j + 1 != columns_count:
-                y = intermediate_result_3[i, j][0] + floor((result[i, j - 1][0] + result[i, j + 1][0]) / 2)
-                cb = intermediate_result_3[i, j][1] + floor((result[i, j - 1][1] + result[i, j + 1][1]) / 2)
-                cr = intermediate_result_3[i, j][2] + floor((result[i, j - 1][2] + result[i, j + 1][2]) / 2)
-                result[i, j] = (y, cb, cr)
+                y = intermediate_3[i, j][0] + floor((result[i, j - 1][0] + result[i, j + 1][0]) / 2)
+                cb = intermediate_3[i, j][1] + floor((result[i, j - 1][1] + result[i, j + 1][1]) / 2)
+                cr = intermediate_3[i, j][2] + floor((result[i, j - 1][2] + result[i, j + 1][2]) / 2)
             else:
-                y = intermediate_result_3[i, j][0] + floor((result[i, j - 1][0] + result[i, j - 1][0]) / 2)
-                cb = intermediate_result_3[i, j][1] + floor((result[i, j - 1][1] + result[i, j - 1][1]) / 2)
-                cr = intermediate_result_3[i, j][2] + floor((result[i, j - 1][2] + result[i, j - 1][2]) / 2)
-                result[i, j] = (y, cb, cr)
+                y = intermediate_3[i, j][0] + floor((result[i, j - 1][0] + result[i, j - 1][0]) / 2)
+                cb = intermediate_3[i, j][1] + floor((result[i, j - 1][1] + result[i, j - 1][1]) / 2)
+                cr = intermediate_3[i, j][2] + floor((result[i, j - 1][2] + result[i, j - 1][2]) / 2)
+            result[i, j] = (y, cb, cr)
     return result
 
 
-def transform(image, size):
-    image = wavelet(image, size)
-    border_height = ceil(len(image) / 2)
-    border_lenght = ceil(len(image[0]) / 2)
-    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
-    for i in range(len(quadrant)):
-        for j in range(len(quadrant[0])):
-            quadrant[i, j] = image[i, j]
-    quadrant = wavelet(quadrant, (border_height, border_lenght))
-    for i in range(len(quadrant)):
-        for j in range(len(quadrant[0])):
-            image[i, j] = quadrant[i, j]
+def transform(image, size, count):
+    rows_count = size[0]
+    columns_count = size[1]
+    image = wavelet_without_loss(image, size)
+    print(rows_count, columns_count)
+    k = 1
+    while k < count:
+        rows_count = ceil(rows_count / 2)
+        columns_count = ceil(columns_count / 2)
+        print(rows_count, columns_count)
+        quadrant = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+        for i in range(rows_count):
+            for j in range(columns_count):
+                quadrant[i, j] = image[i, j]
+        quadrant = wavelet_without_loss(quadrant, (rows_count, columns_count))
+        for i in range(rows_count):
+            for j in range(columns_count):
+                image[i, j] = quadrant[i, j]
+        k += 1
     return image
 
 
-def reverse_transform(image, size):
-    border_height = ceil(len(image) / 2)
-    border_lenght = ceil(len(image[0]) / 2)
-    quadrant = np.array([[(0, 0, 0) for j in range(border_lenght)] for i in range(border_height)])
-    for i in range(len(quadrant)):
-        for j in range(len(quadrant[0])):
-            quadrant[i, j] = image[i, j]
-    quadrant = wavelet_reverse(quadrant, (border_height, border_lenght))
-    for i in range(len(quadrant)):
-        for j in range(len(quadrant[0])):
-            image[i, j] = quadrant[i, j]
-    image = wavelet_reverse(image, size)
+
+def reverse_transform(image, size, count):
+    k = 1
+    rows_count, columns_count = size
+    while k <= count:
+        for i in range(count - k):
+            rows_count = ceil(rows_count / 2)
+            columns_count = ceil(columns_count / 2)
+        quadrant = np.array([[(0, 0, 0) for j in range(columns_count)] for i in range(rows_count)])
+        for i in range(rows_count):
+            for j in range(columns_count):
+                quadrant[i, j] = image[i, j]
+        quadrant = wavelet_without_loss_reverse(quadrant, (rows_count, columns_count))
+        print(rows_count, columns_count)
+
+        for i in range(rows_count):
+            for j in range(columns_count):
+                image[i, j] = quadrant[i, j]
+        k += 1
+        rows_count, columns_count = size
+
     return image
 
 
@@ -490,17 +448,15 @@ def convert_image_to_RGB(matrix, size):
     return matrix
 
 
+
+
 def get_destribution():
-    dest_y = {}
-    dest_cb = {}
-    dest_cr = {}
+    dest = {}
     pr = 0
     for i in range(-256, 513):
-        dest_y[i] = [pr, pr + 1]
-        dest_cb[i] = [pr, pr + 1]
-        dest_cr[i] = [pr, pr + 1]
+        dest[i] = [pr, pr + 1]
         pr += 1
-    return [dest_y, dest_cb, dest_cr]
+    return dest
 
 
 def update_destribution(distribution, element):
@@ -522,29 +478,26 @@ def mq_coder(matrix, size):
     :return: массив со значениями данных после арифметического кодирования,
     кортеж с распределениями из функции get_destribution
     """
-    distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
-    mas = []
+    mas = [[], [], []]
 
     for rounds in range(3):
-        string1 = ''
-        distribution = distribution_massiv[rounds]
-        delitel = distribution[512][1]
-        le = 0
-        h = 65535
-        bits_to_follow = 0
+        print('encode - ', rounds)
         for i in range(size[0]):
+            string1 = ''
+            distribution = get_destribution()
+            delitel = distribution[512][1]
+            le = 0
+            h = 65535
+            bits_to_follow = 0
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
                 ln = le + (distribution[component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[component][1] * (h - le + 1)) // delitel - 1
                 le = ln
-                if le>h:
-                    print(distribution[component])
-
                 while (True):
                     if (h < half):
                         string1 += '0' + '1' * bits_to_follow
@@ -565,12 +518,32 @@ def mq_coder(matrix, size):
 
                 distribution = update_destribution(distribution, component)
                 delitel = distribution[512][1]
-        distribution_massiv[rounds] = distribution
-        mas.append(string1)
+            component = 0
+            ln = le + (distribution[component][0] * (h - le + 1)) // delitel
+            h = le + (distribution[component][1] * (h - le + 1)) // delitel - 1
+            le = ln
+            while (True):
+                if (h < half):
+                    string1 += '0' + '1' * bits_to_follow
+                    bits_to_follow = 0
+                elif (le >= half):
+                    string1 += '1' + '0' * bits_to_follow
+                    bits_to_follow = 0
+                    le -= half
+                    h -= half
+                elif ((le >= first_qtr) and (h < third_qtr)):
+                    bits_to_follow += 1
+                    le -= first_qtr
+                    h -= first_qtr
+                else:
+                    break
+                le += le
+                h += h + 1
+            mas[rounds].append(string1)
     return mas
 
 
-def mq_coder_revers(mas, size):
+def mq_coder_revers(mas_data, size):
     """
     Арифметическое декодирование (обратный MQ-кодер)
     :param mas: Массив с закодированными последовательностями
@@ -578,68 +551,67 @@ def mq_coder_revers(mas, size):
     :return: матрица изображения после декодирования
     """
     matrix = np.array([[(0, 0, 0) for j in range(size[1])] for i in range(size[0])])
-    distribution_massiv = get_destribution()
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
 
     for rounds in range(3):
-        distribution = distribution_massiv[rounds]
-        delitel = distribution[512][1]
-        string = mas[rounds]
-        l = 0
-        h = 65535
-        value = int(string[:16], 2)
-        next_pos = 15
-        height = 0
-        width = 0
-        while (next_pos < len(string)):
-            freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
-            j = 0
-            for j in distribution:
-                if (distribution[j][1] <= freq):
-                    continue
-                else:
-                    break
-            ln = l + (distribution[j][0] * (h - l + 1)) // delitel
-            h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
-            l = ln
-            while (True):
-                if (h < half):
-                    pass
-                elif (l >= half):
-                    l -= half
-                    h -= half
-                    value -= half
-                elif ((l >= first_qtr) and (h < third_qtr)):
-                    l -= first_qtr
-                    h -= first_qtr
-                    value -= first_qtr
-                else:
-                    break
-                l += l
-                h += h + 1
-                next_pos += 1
-                if (next_pos >= len(string)):
-                    break
-                value = value * 2 + int(string[next_pos])
-
-            component_pixel = j
-            pixel = matrix[height, width]
-            pix = list(pixel)
-            pix[rounds] = component_pixel
-            pix = tuple(pix)
-            matrix[height, width] = pix
-            width += 1
-
-            distribution = update_destribution(distribution, j)
+        mas = mas_data[rounds]
+        print('decod - ', rounds)
+        for height in range(size[0]):
+            distribution = get_destribution()
             delitel = distribution[512][1]
+            string1 = mas[height]
+            l = 0
+            h = 65535
+            value = int(string1[:16], 2)
+            next_pos = 15
+            width = 0
+            while (next_pos < len(string1)):
+                freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
+                j = 0
+                for j in distribution:
+                    if (distribution[j][1] <= freq):
+                        continue
+                    else:
+                        break
+                ln = l + (distribution[j][0] * (h - l + 1)) // delitel
+                h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
+                l = ln
+                while (True):
+                    if (h < half):
+                        pass
+                    elif (l >= half):
+                        l -= half
+                        h -= half
+                        value -= half
+                    elif ((l >= first_qtr) and (h < third_qtr)):
+                        l -= first_qtr
+                        h -= first_qtr
+                        value -= first_qtr
+                    else:
+                        break
+                    l += l
+                    h += h + 1
+                    next_pos += 1
+                    if (next_pos >= len(string1)):
+                        break
+                    value = value * 2 + int(string1[next_pos])
 
-            if (width == size[1]):
-                height += 1
-                width = 0
-                if (height == size[0]):
-                    break
+                component_pixel = j
+                pixel = matrix[height, width]
+                pix = list(pixel)
+                pix[rounds] = component_pixel
+                pix = tuple(pix)
+                matrix[height, width] = pix
+                width += 1
+
+                distribution = update_destribution(distribution, j)
+                delitel = distribution[512][1]
+
+                if (width == size[1]):
+                    width = 0
+
     return matrix
 
 
@@ -773,23 +745,19 @@ def convert_image(path, path_save):
 # show_image("D:\Downalds\ test.jpeg2000")
 koef = 0.1
 
-matrix1, size = get_matrix_pixel('example.jpg')
-matrix, size = get_matrix_pixel('example.jpg')
+matrix1, size = get_matrix_pixel('example1.jpg')
+matrix, size = get_matrix_pixel('example1.jpg')
 matrix, mas_st = dc_level_shift(matrix, size)
 matrix = convert_image_to_YCbCr(matrix, size)
-# matrix = transform(matrix, size)
-# matrix = quantize(matrix, koef)
+matrix = transform(matrix, size, 4)
+matrix = quantize(matrix, koef)
 matrix = mq_coder(matrix, size)
 print(len(matrix[0]) + len(matrix[1]) + len(matrix[2]))
 
 matrix = mq_coder_revers(matrix, size)
-# matrix = reverse_quantize(matrix, size, koef)
-# matrix = reverse_transform(matrix, size)
+matrix = reverse_quantize(matrix, size, koef)
+matrix = reverse_transform(matrix, size, 4)
 matrix = convert_image_to_RGB(matrix, size)
 matrix = dc_level_shift_revers(matrix, size, mas_st)
 get_image_from_array(matrix, size)
 
-for i in range(size[0]):
-    for j in range(size[1]):
-        if list(matrix[i, j])!=list(matrix1[i,j]):
-            print(i, j)

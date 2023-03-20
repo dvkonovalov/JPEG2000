@@ -29,8 +29,7 @@ def start_convert_to_jpeg2000():
         koef = 1
     if koef <= 0:
         koef = 0.1
-    main.convert_to_JPEG(path_image, path_image[:path_image.rfind('/')] + '/file.jpeg2000', koef,
-                         transform_wavelet.get())
+    main.convert_to_JPEG(path_image, path_image[:path_image.rfind('/')] + '/file.jpeg2000', koef)
     stroka_file.config(text='Изображение успешно сохранен в ' + path_image[:path_image.rfind('/')] + '/file.jpeg2000')
     result_string.config(text='Конвертация в JPEG2000 завершена', foreground='#00A600')
 
@@ -67,10 +66,7 @@ stroka_koef.place(x=10, y=95)
 quantize_koef = tk.StringVar()
 pole_koef = tk.Entry(font='Times 14', textvariable=quantize_koef)
 pole_koef.place(x=350, y=98)
-transform_wavelet = tk.BooleanVar()
-checkbox_transform = tk.Checkbutton(window, text='Максимальное сжатие при данном коэффициенте', font='Times 14',
-                                    variable=transform_wavelet, onvalue=True, offvalue=False)
-checkbox_transform.place(x=10, y=125)
+
 start_conv_to_jpeg2000 = tk.Button(window, text='Конвертировать в Jpeg2000', activebackground='red', font='Times 16',
                                    background='#00A600', command=start_convert_to_jpeg2000)
 start_conv_to_jpeg2000.place(x=650, y=80)

@@ -1,11 +1,8 @@
-import time
-
 from PIL import Image
 from math import floor
 from math import ceil
 import numpy as np
-from arithmetic_compressor import AECompressor
-from arithmetic_compressor.models import StaticModel
+import copy as cp
 
 """Стандартные матрицы квантования"""
 q_y = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
@@ -25,6 +22,7 @@ q_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                 [99, 99, 99, 99, 33, 33, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99],
                 [99, 99, 99, 99, 99, 99, 99, 99]])
+
 
 def wavelet_without_loss(image, size):
     rows_count = size[0]
@@ -327,6 +325,7 @@ def get_image_from_array(massiv, size):
         for j in range(size[1]):
             matrix[i, j] = tuple(massiv[i, j])
     img.show()
+    img.save('test1111.jpg')
     return True
 
 
@@ -445,66 +444,26 @@ def convert_image_to_RGB(matrix, size):
     return matrix
 
 
-def get_destribution(matrix, size):
-    """
-    Получение распределения значений пикселей
-    :param matrix: матрица изображения
-    :param size: кортеж с размерами изображения - (высота, ширина)
-    :return: кортеж с словарями распределений
-    """
-    count_y = {}
-    count_cb = {}
-    count_cr = {}
-    m = 0
-    for i in range(size[0]):
-        for j in range(size[1]):
-            y = matrix[i, j][0]
-            cb = matrix[i, j][1]
-            cr = matrix[i, j][2]
 
-            if y>m:
-                m = y
 
-            if cb>m:
-                m = cb
+def get_destribution():
+    dest = {}
+    pr = 0
+    for i in range(-384, 385):
+        dest[i] = [pr, pr + 1]
+        pr += 1
+    return dest
 
-            if cr>m:
-                m = cr
 
-            if y not in count_y:
-                count_y[y] = 1
-            else:
-                count_y[y] += 1
-
-            if cb not in count_cb:
-                count_cb[cb] = 1
-            else:
-                count_cb[cb] += 1
-
-            if cr not in count_cr:
-                count_cr[cr] = 1
-            else:
-                count_cr[cr] += 1
-    dist_y = {}
-    dist_cb = {}
-    dist_cr = {}
-    pr_y = 0
-    pr_cb = 0
-    pr_cr = 0
-    for i in range(-1000, 1000):
-        if i in count_y:
-            dist_y[i] = (pr_y, pr_y + count_y[i])
-            pr_y = count_y[i] + pr_y
-
-        if i in count_cb:
-            dist_cb[i] = (pr_cb, pr_cb + count_cb[i])
-            pr_cb = pr_cb + count_cb[i]
-
-        if i in count_cr:
-            dist_cr[i] = (pr_cr, pr_cr + count_cr[i])
-            pr_cr = pr_cr + count_cr[i]
-
-    return (dist_y, dist_cb, dist_cr)
+def update_destribution(distribution, element):
+    pr = 0
+    for i in distribution:
+        distribution[i][0] += pr
+        distribution[i][1] += pr
+        if i == element:
+            distribution[i][1] += 1
+            pr += 1
+    return distribution
 
 
 def mq_coder(matrix, size):
@@ -515,29 +474,27 @@ def mq_coder(matrix, size):
     :return: массив со значениями данных после арифметического кодирования,
     кортеж с распределениями из функции get_destribution
     """
-    mas_distributions = get_destribution(matrix, size)
-    delitel = size[0] * size[1]
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
-    mas = []
+    mas = [[], [], []]
+    distribution_original = get_destribution()
+    delitel_original = distribution_original[384][1]
 
     for rounds in range(3):
-        string1 = ''
-        le = 0
-        h = 65535
-        bits_to_follow = 0
-        distribution = mas_distributions[rounds]
         for i in range(size[0]):
+            string1 = ''
+            distribution = cp.deepcopy(distribution_original)
+            delitel = delitel_original
+            le = 0
+            h = 65535
+            bits_to_follow = 0
             for j in range(size[1]):
                 pixel = matrix[i, j]
                 component = pixel[rounds]
                 ln = le + (distribution[component][0] * (h - le + 1)) // delitel
                 h = le + (distribution[component][1] * (h - le + 1)) // delitel - 1
                 le = ln
-                if h<le:
-                    print(le, h)
-                    h = le
                 while (True):
                     if (h < half):
                         string1 += '0' + '1' * bits_to_follow
@@ -554,94 +511,81 @@ def mq_coder(matrix, size):
                     else:
                         break
                     le += le
-                    h += (h + 1)
+                    h += h + 1
 
-        mas.append(string1)
-    return mas, mas_distributions
+                distribution = update_destribution(distribution, component)
+                delitel += 1
+
+            mas[rounds].append(string1)
+    return mas
 
 
-def mq_coder_revers(mas, size, distrb):
+def mq_coder_revers(mas_data, size):
     """
     Арифметическое декодирование (обратный MQ-кодер)
     :param mas: Массив с закодированными последовательностями
     :param size: размеры получаемой матрицы в виде кортежа
     :return: матрица изображения после декодирования
     """
-    matrix = np.array([[(0,0,0) for j in range(size[1])] for i in range(size[0])])
-    # img = Image.new('RGB', size, 'white')
-    # matrix = img.load()
-    distribution = distrb
-    delitel = size[0] * size[1]
+    matrix = np.array([[(0, 0, 0) for j in range(size[1])] for i in range(size[0])])
     first_qtr = 65536 // 4
     half = first_qtr * 2
     third_qtr = first_qtr * 3
+    distribution_original = get_destribution()
+    delitel_original = distribution_original[384][1]
 
     for rounds in range(3):
-        dist_comp = distribution[rounds]
-        string = mas[rounds]
-        l = 0
-        h = 65535
-        value = int(string[:16], 2)
-        next_pos = 15
-        height = 0
-        width = 0
-        while (next_pos < len(string)):
-            freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
-            j = 0
-            for j in dist_comp:
-                if (dist_comp[j][1] <= freq):
-                    continue
-                else:
-                    break
-            ln = l + (dist_comp[j][0] * (h - l + 1)) // delitel
-            h = l + (dist_comp[j][1] * (h - l + 1)) // delitel - 1
-            l = ln
-            while (True):
-                if (h < half):
-                    pass
-                elif (l >= half):
-                    l -= half
-                    h -= half
-                    value -= half
-                elif ((l >= first_qtr) and (h < third_qtr)):
-                    l -= first_qtr
-                    h -= first_qtr
-                    value -= first_qtr
-                else:
-                    break
-                l += l
-                h += h + 1
-                next_pos += 1
-                if (next_pos == len(string)):
-                    break
-                value = value * 2 + int(string[next_pos])
-            component_pixel = j
-            pixel = matrix[height, width]
-            pix = list(pixel)
-            pix[rounds] = component_pixel
-            pix = tuple(pix)
-            matrix[height, width] = pix
-            width += 1
-            if (width == size[1]):
-                height += 1
-                width = 0
-                if (height == size[0]):
-                    break
+        mas = mas_data[rounds]
+        for height in range(size[0]):
+            distribution = cp.deepcopy(distribution_original)
+            delitel = delitel_original
+            string1 = mas[height]
+            l = 0
+            h = 65535
+            value = int(string1[:16], 2)
+            next_pos = 15
+            width = 0
+            while (next_pos < len(string1)):
+                freq = ((value - l + 1) * delitel - 1) // (h - l + 1)
+                for j in distribution:
+                    if (distribution[j][1] <= freq):
+                        continue
+                    else:
+                        break
+                ln = l + (distribution[j][0] * (h - l + 1)) // delitel
+                h = l + (distribution[j][1] * (h - l + 1)) // delitel - 1
+                l = ln
+                while (True):
+                    if (h < half):
+                        pass
+                    elif (l >= half):
+                        l -= half
+                        h -= half
+                        value -= half
+                    elif ((l >= first_qtr) and (h < third_qtr)):
+                        l -= first_qtr
+                        h -= first_qtr
+                        value -= first_qtr
+                    else:
+                        break
+                    l += l
+                    h += h + 1
+                    next_pos += 1
+                    if (next_pos >= len(string1)):
+                        break
+                    value = value * 2 + int(string1[next_pos])
+
+                component_pixel = j
+                pixel = matrix[height, width]
+                pix = list(pixel)
+                pix[rounds] = component_pixel
+                pix = tuple(pix)
+                matrix[height, width] = pix
+                width += 1
+
+                distribution = update_destribution(distribution, j)
+                delitel += 1
     return matrix
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def create_file(data, path):
@@ -656,14 +600,14 @@ def create_file(data, path):
         Порядок записи:
         1) Размер изображения
         2) Степени ST через пробел
-        3) Значение распредления Y
-        4) Значение распредления Cb
-        5) Значене распредления Cr
-        6) Строка значений для Y
-        7) Строка значений Cb
-        8) Строка значений Cr
-        9) Коэффициент квантования
-        10) Включено ли повторное вейвлет-преобразование
+        3) Коэффициент квантования
+        4) Строка значений для Y
+        5) Строка значений Cb
+        6) Строка значений Cr
+        """
+        """
+        mas_y = ['111010110', '1010110']
+        111010110 1010110 011011011 10101
         """
         wr_record = str(data['size'][0]) + ' ' + str(data['size'][1]) + '\n'
         file.write(wr_record)
@@ -727,10 +671,8 @@ def convert_to_JPEG(path, path_save, quantize_koef=0.1, on_transform=False):
     matrix, size = get_matrix_pixel(path)  # size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
-    if on_transform:
-        matrix = transform(matrix, size)
-    else:
-        matrix = wavelet_without_loss(matrix, size)
+    matrix = transform(matrix, size, 6)
+
     matrix = quantize(matrix, quantize_koef)
     mas_values, mas_destribution = mq_coder(matrix, size)
     rec_dict = {}
@@ -746,12 +688,10 @@ def convert_to_JPEG(path, path_save, quantize_koef=0.1, on_transform=False):
 def show_image(path):
     data = read_data(path)
     size = data['size']
-    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = mq_coder_revers(data['mas_values'], size)
     matrix = reverse_quantize(matrix, size, data['quantize_koef'])
-    if data['on_transform']:
-        matrix = reverse_transform(matrix, size)
-    else:
-        matrix = wavelet_without_loss_reverse(matrix, size)
+    matrix = reverse_transform(matrix, size, 6)
+
     matrix = convert_image_to_RGB(matrix, size)
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
     get_image_from_array(matrix, size)
@@ -760,43 +700,31 @@ def show_image(path):
 def convert_image(path, path_save):
     data = read_data(path)
     size = data['size']
-    matrix = mq_coder_revers(data['mas_values'], size, data['mas_destribution'])
+    matrix = mq_coder_revers(data['mas_values'], size)
     matrix = reverse_quantize(matrix, size, data['quantize_koef'])
-    if data['on_transform']:
-        matrix = reverse_transform(matrix, size)
-    else:
-        matrix = wavelet_without_loss_reverse(matrix, size)
+    matrix = reverse_transform(matrix, size, 6)
+
     matrix = convert_image_to_RGB(matrix, size)
     matrix = dc_level_shift_revers(matrix, size, data['mas_st'])
     save_image(matrix, size, path_save)
-#
-# convert_to_JPEG('example1.jpg', 'coded1.jpg')
-# show_image("coded1.jpg")
-# koef = 0.1
-matrix, size = get_matrix_pixel('example1.jpg')
 
 
+koef = 0.05
 
-# new_matrix = wavelet_without_loss_reverse(wavelet_without_loss(matrix, size), size)
-# array = np.zeros((size[0], size[1]))
-# file = open('file.txt', 'w')
-#
-# for i in range(size[0]):
-#     for j in range(size[1]):
-#         file.write(str(matrix[i, j][0] - new_matrix[i, j][0]) + ' ')
-#         array[i, j] = matrix[i, j][0] - new_matrix[i, j][0]
-#     file.write('\n')
-# file.close()
-
-
-
+matrix, size = get_matrix_pixel('example.jpg')
 matrix, mas_st = dc_level_shift(matrix, size)
 matrix = convert_image_to_YCbCr(matrix, size)
 matrix = transform(matrix, size, 6)
-matrix = quantize(matrix, 0.05)
-# matrix, dest = mq_coder(matrix, size)
-# matrix = mq_coder_revers(matrix, size, dest)
-matrix = reverse_quantize(matrix, size, 0.05)
+matrix = quantize(matrix, koef)
+matrix = mq_coder(matrix, size)
+summa = 0
+for i in range(3):
+    for j in matrix[i]:
+        summa += len(j)
+print(summa)
+
+matrix = mq_coder_revers(matrix, size)
+matrix = reverse_quantize(matrix, size, koef)
 matrix = reverse_transform(matrix, size, 6)
 matrix = convert_image_to_RGB(matrix, size)
 matrix = dc_level_shift_revers(matrix, size, mas_st)

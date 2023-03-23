@@ -809,10 +809,11 @@ def create_file(data):
     3) Степень ST 1
     4) Степень ST 2
     5) Степень ST 3
-    6) Коэффициент квантования
-    7) Строка значений для Y
-    8) Строка значений Cb
-    9) Строка значений Cr
+    6) Вайвлет с поерями True или без потерь False
+    7) Коэффициент квантования
+    8) Строка значений для Y
+    9) Строка значений Cb
+    10) Строка значений Cr
     """
 
     file = open('photo.bin', 'wb')
@@ -823,6 +824,7 @@ def create_file(data):
     file.write(chr(data['mas_st'][0]).encode() + b"\n")
     file.write(chr(data['mas_st'][1]).encode() + b"\n")
     file.write(chr(data['mas_st'][2]).encode() + b"\n")
+    file.write(str(int(data['quantize_koef'])).encode() + b"\n")
     file.write(str(data['quantize_koef']).encode() + b"\n")
 
 
@@ -859,16 +861,16 @@ def read_data(path):
     ret_dict = {}
     """
             Порядок чтения:
-            1) Размер изображения
-            2) Степени ST через пробел
-            3) Значение распредления Y
-            4) Значение распредления Cb
-            5) Значене распредления Cr
-            6) Строка значений для Y
-            7) Строка значений Cb
-            8) Строка значений Cr
-            9) Коэффициент квантования
-            10) Включено ли повторное вейвлет-преобразование
+            1) Высота изображения
+            2) Ширина изображения
+            3) Степень ST 1
+            4) Степень ST 2
+            5) Степень ST 3
+            6) Вайвлет с поерями True или без потерь False
+            7) Коэффициент квантования
+            8) Строка значений для Y
+            9) Строка значений Cb
+            10) Строка значений Cr
             """
     with open(path, 'r') as file:
         temp = list(map(int, (file.readline()).split()))
@@ -899,11 +901,14 @@ def read_data(path):
     return ret_dict
 
 
-def convert_to_JPEG(path, quantize_koef=0.1):
+def convert_to_JPEG(path, quantize_koef=0.1, walvet_with_loss = False):
     matrix, size = get_matrix_pixel(path)  # size = (height, width)
     matrix, mas_st = dc_level_shift(matrix, size)
     matrix = convert_image_to_YCbCr(matrix, size)
-    matrix = transform(matrix, size, 6)
+    if walvet_with_loss:
+        matrix = transform(matrix, size, 6, walvet_with_loss)
+    else:
+        matrix = transform(matrix, size, 6)
     matrix = quantize(matrix, quantize_koef)
     mas_values = mq_coder(matrix, size)
     rec_dict = {}
@@ -911,6 +916,7 @@ def convert_to_JPEG(path, quantize_koef=0.1):
     rec_dict['mas_st'] = mas_st
     rec_dict['quantize_koef'] = quantize_koef
     rec_dict['mas_values'] = mas_values
+    rec_dict['walvet_with_loss'] = walvet_with_loss
     create_file(rec_dict)
 
 

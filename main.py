@@ -856,49 +856,65 @@ def create_file(data):
         file.write(b"\n")
 
 
-
 def read_data(path):
-    ret_dict = {}
     """
-            Порядок чтения:
-            1) Высота изображения
-            2) Ширина изображения
-            3) Степень ST 1
-            4) Степень ST 2
-            5) Степень ST 3
-            6) Вайвлет с поерями True или без потерь False
-            7) Коэффициент квантования
-            8) Строка значений для Y
-            9) Строка значений Cb
-            10) Строка значений Cr
-            """
-    with open(path, 'r') as file:
-        temp = list(map(int, (file.readline()).split()))
-        ret_dict['size'] = tuple(temp)
-        temp = list(map(int, (file.readline()).split()))
-        ret_dict['mas_st'] = temp
-        mas_destribution = []
-        for k in range(3):
-            mas_dest = list(map(int, (file.readline()).split()))
-            slovar = {}
-            pr = 0
-            for i in range(0, len(mas_dest), 2):
-                slovar[mas_dest[i]] = (pr, mas_dest[i + 1])
-                pr = mas_dest[i + 1]
-            mas_destribution.append(slovar)
-        ret_dict['mas_destribution'] = mas_destribution
-        mas_values = []
-        for k in range(3):
-            mas_values.append(file.readline()[:-1])
-        ret_dict['mas_values'] = mas_values
-        ret_dict['quantize_koef'] = float(file.readline())
-        flag = file.readline()
-        if int(flag) == 1:
-            flag = True
-        else:
+        Порядок записи:
+        1) Высота изображения
+        2) Ширина изображения
+        3) Степень ST 1
+        4) Степень ST 2
+        5) Степень ST 3
+        6) True если Wavelet с потерями False, если без
+        7) Коэффициент квантования
+        8) Строка значений для Y
+        9) Строка значений Cb
+        10) Строка значений Cr
+        """
+
+    file = open("file.bin", 'rb')
+    size = []
+    mas_st = []
+    quantize_koef = 0
+
+    for i in range(2):
+        read_size = file.readline().decode()[:1]
+        size.append(ord(str(read_size)))
+
+    for i in range(3):
+        read_mas_st = ord(file.readline().decode()[:1])
+        mas_st.append(int(read_mas_st))
+
+    read_koef = ord(file.readline().decode()[:1])
+    wavelet_without_loss = bool(file.readline().decode()[:1])
+    quantize_koef = float(read_koef / 100)
+
+    file.readline()
+
+    flag = True
+    position = 0
+    mas = [[], [], []]
+    while flag:
+        values = ''
+        value = file.readline()
+        for j in value:
+            k = str(bin(j)[2:])
+            while len(k) < 8:
+                k = '0' + k
+            values += k
+        value = file.readline()
+        while str(bin(value[0])) != "0b1010":
+            for j in value:
+                k = str(bin(j)[2:])
+                while len(k) < 8:
+                    k = '0' + k
+                values += k
+            value = file.readline()
+        values = values[:-9]
+        mas[position].append(values)
+        position = (position + 1) % 3
+        if len(mas[2]) == size[0]:
             flag = False
-        ret_dict['on_transform'] = flag
-    return ret_dict
+    return mas
 
 
 def convert_to_JPEG(path, quantize_koef=0.1, walvet_with_loss = False):
